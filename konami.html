@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Job Ticket — E155374 Konami YCS Santiago + SWISS Winners Cards</title>
+<script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+<style>
+  :root {
+    --bg: #f5f5f5; --card: #fff; --border: #d0d0d0; --text: #1a1a1a; --muted: #666;
+    --accent: #2563eb; --accent-light: #dbeafe;
+    --green: #16a34a; --green-light: #dcfce7;
+    --orange: #ea580c; --orange-light: #fff7ed;
+    --red: #dc2626; --red-light: #fef2f2;
+    --yellow: #ca8a04; --yellow-light: #fefce8;
+    --purple: #7c3aed; --purple-light: #ede9fe;
+    --teal: #0d9488; --teal-light: #ccfbf1;
+    --rose: #e11d48; --rose-light: #fff1f2;
+    --amber: #d97706; --amber-light: #fffbeb;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); line-height: 1.5; }
+  .app-header { background: #1e293b; color: white; padding: 12px 24px; display: flex; align-items: center; justify-content: space-between; }
+  .app-header h1 { font-size: 18px; font-weight: 600; }
+  .app-header .subtitle { color: #94a3b8; font-size: 13px; }
+  .app-header .actions { display: flex; gap: 8px; }
+  .app-header .actions button { background: var(--accent); color: white; border: none; border-radius: 6px; padding: 8px 16px; font-size: 13px; font-weight: 500; cursor: pointer; }
+  .app-header .actions button:hover { background: #1d4ed8; }
+  .main { max-width: 1200px; margin: 0 auto; padding: 20px; }
+
+  .job-header-card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 24px; margin-bottom: 20px; }
+  .job-header-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+  .field-group label { display: block; font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--muted); letter-spacing: 0.5px; margin-bottom: 4px; }
+  .field-group .value { font-size: 15px; font-weight: 500; }
+  .field-group .value.large { font-size: 20px; font-weight: 700; }
+  .estimate-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 16px; font-size: 13px; color: #475569; margin-top: 8px; }
+  .estimate-box .est-label { font-weight: 600; color: var(--text); margin-bottom: 4px; }
+
+  .job-summary-banner { background: linear-gradient(135deg, #1e293b, #334155); color: white; border-radius: 10px; padding: 20px 24px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; }
+  .summary-stat { text-align: center; min-width: 80px; }
+  .summary-stat .stat-num { font-size: 32px; font-weight: 800; line-height: 1; }
+  .summary-stat .stat-num.blue { color: #60a5fa; }
+  .summary-stat .stat-num.green { color: #4ade80; }
+  .summary-stat .stat-num.purple { color: #a78bfa; }
+  .summary-stat .stat-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: #94a3b8; margin-top: 4px; }
+  .summary-divider { width: 1px; height: 48px; background: #475569; }
+
+  .parts-nav { display: flex; gap: 4px; margin-bottom: 0; padding: 0 4px; flex-wrap: wrap; }
+  .parts-nav button { padding: 10px 16px; border: 1px solid var(--border); border-bottom: none; border-radius: 8px 8px 0 0; background: #e9ecef; color: var(--muted); font-size: 13px; font-weight: 500; cursor: pointer; position: relative; bottom: -1px; }
+  .parts-nav button.active { background: var(--card); color: var(--text); font-weight: 600; border-bottom: 1px solid var(--card); }
+  .parts-nav button .part-badge { display: inline-block; font-size: 10px; padding: 1px 6px; border-radius: 10px; margin-left: 4px; font-weight: 600; }
+  .parts-nav button:nth-child(1) .part-badge { background: #dbeafe; color: #1d4ed8; }
+  .parts-nav button:nth-child(2) .part-badge { background: #ccfbf1; color: #0d9488; }
+  .parts-nav button:nth-child(3) .part-badge { background: #fff1f2; color: #e11d48; }
+  .parts-nav button:nth-child(4) .part-badge { background: #fffbeb; color: #d97706; }
+
+  .part-container { background: var(--card); border: 1px solid var(--border); border-radius: 0 10px 10px 10px; padding: 24px; margin-bottom: 20px; }
+  .part-container.hidden { display: none; }
+
+  .part-hero { margin-bottom: 20px; padding-bottom: 20px; border-bottom: 3px solid #e2e8f0; }
+  .part-hero .part-number { font-size: 36px; font-weight: 900; letter-spacing: -1px; line-height: 1; }
+  .part-hero .part-subtitle { font-size: 18px; font-weight: 600; color: var(--text); margin-top: 4px; }
+  .part-hero .part-meta { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 10px; }
+  .part-tag { font-size: 12px; padding: 3px 10px; border-radius: 20px; font-weight: 500; }
+  .tag-material { background: #e0f2fe; color: #0369a1; }
+  .tag-sides { background: #fce7f3; color: #be185d; }
+  .tag-finish { background: #ecfccb; color: #4d7c0f; }
+  .tag-process { background: #fef3c7; color: #92400e; }
+
+  .size-breakdown { font-size: 13px; font-weight: 600; color: #334155; margin-bottom: 16px; padding: 8px 12px; background: #e8f0fe; border-radius: 6px; }
+
+  .process-notes { background: #fefce8; border: 1px solid #fde68a; border-radius: 8px; padding: 14px 16px; margin-bottom: 16px; font-size: 13px; }
+  .process-notes h5 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; color: #92400e; margin-bottom: 6px; }
+  .process-notes ol, .process-notes ul { padding-left: 20px; color: #78350f; }
+  .process-notes li { margin-bottom: 3px; }
+
+  .items-table { width: 100%; border-collapse: collapse; }
+  .items-table thead th { text-align: left; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); padding: 8px 10px; border-bottom: 2px solid #e2e8f0; }
+  .items-table tbody tr { border-bottom: 1px solid #f0f0f0; }
+  .items-table tbody tr:hover { background: #fafbfc; }
+  .items-table td { padding: 10px; vertical-align: middle; font-size: 14px; }
+  .thumb-cell { width: 64px; height: 64px; border-radius: 6px; overflow: hidden; border: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: center; background: #f1f5f9; flex-shrink: 0; }
+  .thumb-placeholder { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 9px; color: #94a3b8; text-align: center; padding: 4px; background: linear-gradient(135deg, #e2e8f0, #f1f5f9); }
+  .filename-cell { font-weight: 600; }
+  .filename-cell .file-ext { color: var(--muted); font-weight: 400; }
+  .desc-cell { color: #475569; font-size: 13px; }
+  .dims-cell { font-family: 'SF Mono', 'Consolas', monospace; font-size: 13px; white-space: nowrap; }
+  .qty-cell { font-weight: 700; font-size: 16px; text-align: center; }
+  .finish-cell { font-size: 13px; }
+  .status-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; padding: 3px 8px; border-radius: 12px; font-weight: 500; }
+  .status-pending { background: var(--yellow-light); color: var(--yellow); }
+  .status-complete { background: var(--green-light); color: var(--green); }
+
+  .part-summary { display: flex; justify-content: space-between; align-items: center; margin-top: 16px; padding-top: 16px; border-top: 2px solid #e2e8f0; }
+  .total-items { font-size: 14px; color: var(--muted); }
+  .total-items strong { color: var(--text); }
+  .total-qty { font-size: 18px; font-weight: 700; }
+
+  /* Drawdown at bottom of part */
+  .substrate-drawdown { background: #1e293b; color: white; border-radius: 10px; padding: 20px; margin-top: 20px; }
+  .substrate-drawdown h4 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; color: #94a3b8; margin-bottom: 12px; }
+  .drawdown-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: rgba(255,255,255,0.06); border-radius: 8px; margin-bottom: 8px; }
+  .drawdown-row:last-of-type { margin-bottom: 0; }
+  .drawdown-label { font-weight: 600; font-size: 14px; }
+  .drawdown-detail { font-size: 13px; color: #cbd5e1; }
+  .drawdown-value { font-size: 22px; font-weight: 800; color: #60a5fa; }
+  .drawdown-value .unit { font-size: 13px; font-weight: 500; color: #94a3b8; }
+  .drawdown-flags { display: flex; gap: 16px; margin-top: 10px; padding: 10px 14px; background: rgba(255,255,255,0.04); border-radius: 8px; }
+  .drawdown-flags label { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500; cursor: pointer; }
+  .drawdown-flags label.order { color: #fb923c; }
+  .drawdown-flags label.pull { color: #4ade80; }
+  .drawdown-flags input[type="radio"] { accent-color: #60a5fa; }
+
+  .pm-notes { margin-top: 16px; }
+  .pm-notes h5 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); margin-bottom: 6px; }
+  .pm-notes textarea { width: 100%; min-height: 70px; padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-family: inherit; font-size: 13px; color: var(--text); background: #f8fafc; resize: vertical; line-height: 1.5; }
+  .pm-notes textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+
+  .estimate-recon { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 24px; margin-top: 12px; }
+  .estimate-recon h3 { font-size: 16px; margin-bottom: 16px; }
+  .recon-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  .recon-table th { text-align: left; padding: 8px; font-size: 11px; text-transform: uppercase; color: var(--muted); }
+  .recon-table td { padding: 8px; }
+  .recon-table tbody tr { border-bottom: 1px solid #f0f0f0; }
+  .recon-table tfoot tr { border-top: 2px solid #1e293b; font-weight: 700; }
+
+  .mockup-banner { background: linear-gradient(90deg, #fbbf24, #f59e0b); color: #1a1a1a; text-align: center; padding: 6px; font-size: 12px; font-weight: 600; }
+</style>
+</head>
+<body>
+
+<div class="mockup-banner">MOCKUP -- Konami Job Ticket Preview</div>
+
+<div class="app-header">
+  <div>
+    <h1>Wide Format Job Ticket</h1>
+    <div class="subtitle">Konami YCS Santiago + SWISS Winners Cards -- RR Donnelley</div>
+  </div>
+  <div class="actions">
+    <button id="btnPdf" onclick="generatePDF()">Download Job Ticket PDF</button>
+  </div>
+</div>
+
+<div class="main">
+  <div class="job-header-card">
+    <div class="job-header-grid">
+      <div class="field-group"><label>Job Number / Estimate</label><div class="value large">E155374</div></div>
+      <div class="field-group"><label>Client / Broker</label><div class="value">RR Donnelley (Francine Diekmann)</div></div>
+      <div class="field-group"><label>Job Name</label><div class="value">Konami YCS Santiago + SWISS Winners Cards</div></div>
+      <div class="field-group"><label>Project Manager</label><div class="value">Scott Jehlik</div></div>
+      <div class="field-group"><label>Date Created</label><div class="value">Oct 9, 2026</div></div>
+      <div class="field-group"><label>Estimate Valid Until</label><div class="value" style="color:var(--orange);font-weight:700">Nov 8, 2026</div></div>
+    </div>
+    <div class="estimate-box">
+      <div class="est-label">Estimate Description</div>
+      Konami YCS Santiago + SWISS Winners Cards. Part 1: Chrome Vinyl + Infinity Board + Foil (14 cards, 2 sizes). Part 2: Infinity Board 4/4 direct print, no foil (8 cards). Part 3: Vinyl banner 36x84 w/ hem & grommets. Part 4: SEG graphics on TXJBB fabric. Carton pack. Shipping not included.
+    </div>
+  </div>
+
+  <div class="job-summary-banner">
+    <div class="summary-stat"><div class="stat-num blue">4</div><div class="stat-label">Parts</div></div>
+    <div class="summary-divider"></div>
+    <div class="summary-stat"><div class="stat-num green">17</div><div class="stat-label">Line Items</div></div>
+    <div class="summary-divider"></div>
+    <div class="summary-stat"><div class="stat-num purple">40</div><div class="stat-label">Total Pieces</div></div>
+    <div class="summary-divider"></div>
+    <div class="summary-stat"><div class="stat-num" style="color:#f87171">0</div><div class="stat-label">Flagged</div></div>
+  </div>
+
+  <div id="view-ticket">
+    <div class="parts-nav">
+      <button class="active" onclick="showPart(1,this)">Part 1 <span class="part-badge">Chrome Vinyl+Board+Foil</span></button>
+      <button onclick="showPart(2,this)">Part 2 <span class="part-badge">Board 4/4 No Foil</span></button>
+      <button onclick="showPart(3,this)">Part 3 <span class="part-badge">14oz Vinyl Banner</span></button>
+      <button onclick="showPart(4,this)">Part 4 <span class="part-badge">SEG - TXJBB Fabric</span></button>
+    </div>
+
+    <!-- ===== PART 1 ===== -->
+    <div class="part-container" id="part-1">
+      <div class="part-hero">
+        <div class="part-number" style="color:var(--accent)">PART 1</div>
+        <div class="part-subtitle">Chrome Vinyl on 3/16" Infinity Board -- Cards with Foil</div>
+        <div class="part-meta">
+          <span class="part-tag tag-material">Chrome Vinyl 5/0 (White + 4CP)</span>
+          <span class="part-tag tag-material">3/16" White Infinity Board 4/0</span>
+          <span class="part-tag tag-sides">Side 1: Vinyl -- Side 2: Board</span>
+          <span class="part-tag tag-finish">Mount + Trim to Shape + Rounded Corners</span>
+          <span class="part-tag tag-process">Foil Application</span>
+        </div>
+      </div>
+      <div class="process-notes">
+        <h5>Production Process</h5>
+        <ol>
+          <li>Print Chrome Vinyl 5/0 (White + CMYK)</li>
+          <li>Apply foil to designated areas on vinyl</li>
+          <li>Print 3/16" Infinity Board 4/0 (side 2 artwork)</li>
+          <li>Mount printed Chrome Vinyl to Side 1 of Infinity Board</li>
+          <li>Trim to shape with rounded corners</li>
+        </ol>
+      </div>
+      <div class="size-breakdown">4 pcs @ 27.44" x 40" ($215 ea) &emsp;|&emsp; 10 pcs @ 17.837" x 26" ($167 ea) &emsp;|&emsp; Part total: $2,530.00</div>
+      <table class="items-table">
+        <thead><tr><th style="width:70px">Thumb</th><th>Filename</th><th>Description</th><th>Size</th><th style="text-align:center">Qty</th><th>$/ea</th><th style="text-align:center">QC</th></tr></thead>
+        <tbody>
+          <tr><td><div class="thumb-cell"><div class="thumb-placeholder">YCS<br>Vera</div></div></td><td class="filename-cell">26YC-EN001_UR 70ADV TEAM YCS Veracruz<span class="file-ext">.pdf</span></td><td class="desc-cell">TEAM YCS Veracruz -- ADV</td><td class="dims-cell">17.837" x 26"</td><td class="qty-cell">3</td><td class="finish-cell">$167</td><td><span class="status-badge status-pending">Pending</span></td></tr>
+          <tr><td><div class="thumb-cell"><div class="thumb-placeholder">YCS<br>Vera</div></div></td><td class="filename-cell">26YC-EN001_UR 71GEN TEAM YCS Veracruz<span class="file-ext">.pdf</span></td><td class="desc-cell">TEAM YCS Veracruz -- GEN</td><td class="dims-cell">17.837" x 26"</td><td class="qty-cell">3</td><td class="finish-cell">$167</td><td><span class="status-badge status-pending">Pending</span></td></tr>
+          <tr><td><div class="thumb-cell"><div class="thumb-placeholder">Card</div></div></td><td class="filename-cell">F3BETBSP037<span class="file-ext">.pdf</span></td><td class="desc-cell">Winners Card -- Foil</td><td class="dims-cell">27.44" x 40"</td><td class="qty-cell">1</td><td class="finish-cell">$215</td><td><span class="status-badge status-pending">Pending</span></td></tr>
+          <tr><td><div class="thumb-cell"><div class="thumb-placeholder">Card</div></div></td><td class="filename-cell">F3BETBSP039<span class="file-ext">.pdf</span></td><td class="desc-cell">Winners Card -- Foil</td><td class="dims-cell">27.44" x 40"</td><td class="qty-cell">1</td><td class="finish-cell">$215</td><td><span class="status-badge status-pending">Pending</span></td></tr>
+          <tr><td><div class="thumb-cell"><div class="thumb-placeholder">Card</div></div></td><td class="filename-cell">F4BETBSP048<span class="file-ext">.pdf</span></td><td class="desc-cell">Winners Card -- Foil</td><td class="dims-cell">27.44" x 40"</td><td class="qty-cell">1</td><td class="finish-cell">$215</td><td><span class="status-badge status-pending">Pending</span></td></tr>
+          <tr><td><div class="thumb-cell"><div class="thumb-placeholder">Card</div></div></td><td class="filename-cell">F4BETBSP052<span class="file-ext">.pdf</span></td><td class="desc-cell">Winners Card -- Foil</td><td class="dims-cell">27.44" x 40"</td><td class="qty-cell">1</td><td class="finish-cell">$215</td><td><span class="status-badge status-pending">Pending</span></td></tr>
+          <tr><td><div class="thumb-cell"><div class="thumb-placeholder">SD</div></div></td><td class="filename-cell">26YC-EN001_UR 60ADV YCS Santo Domingo<span class="file-ext">.pdf</span></td><td class="desc-cell">YCS Santo Domingo -- ADV</td><td class="dims-cell">17.837" x 26"</td><td class="qty-cell">1</td><td class="finish-cell">$167</td><td><span class="status-badge status-pending">Pending</span></td></tr>
+          <tr><td><div class="thumb-cell"><div class="thumb-placeholder">SD</div></div></td><td class="filename-cell">26YC-EN001_UR 61GEN YCS Santo Domingo<span class="file-ext">.pdf</span></td><td class="desc-cell">YCS Santo Domingo -- GEN</td><td class="dims-cell">17.837" x 26"</td><td class="qty-cell">1</td><td class="finish-cell">$167</td><td><span class="status-badge status-pending">Pending</span></td></tr>
+          <tr><td><div class="thumb-cell"><div class="thumb-placeholder">Lima</div></div></td><td class="filename-cell">26YC-EN001_UR 62ADV YCS Lima<span class="file-ext">.pdf</span></td><td class="desc-cell">YCS Lima -- ADV</td><td class="dims-cell">17.837" x 26"</td><td class="qty-cell">1</td><td class="finish-cell">$167</td><td><span class="status-badge status-pending">Pending</span></td></tr>
+          <tr><td><div class="thumb-cell"><div class="thumb-placeholder">Lima</div></div></td><td class="filename-cell">26YC-EN001_UR 63GEN YCS Lima<span class="file-ext">.pdf</span></td><td class="desc-cell">YCS Lima -- GEN</td><td class="dims-cell">17.837" x 26"</td><td class="qty-cell">1</td><td class="finish-cell">$167</td><td><span class="status-badge status-pending">Pending</span></td></tr>
+        </tbody>
+      </table>
+      <div class="part-summary">
+        <div class="total-items"><strong>10 items</strong> -- 2 sizes, same process (vinyl + foil + board + mount)</div>
+        <div class="total-qty">Part Total: <span style="color:var(--accent)">14 pcs</span> -- <span style="color:var(--green)">$2,530.00</span></div>
+      </div>
+      <div class="substrate-drawdown">
+        <h4>Substrate Drawdown -- Part 1</h4>
+        <div class="drawdown-row">
+          <div><div class="drawdown-label">Chrome Vinyl (roll stock)</div><div class="drawdown-detail">14 pcs -- 4 @ 27.44"x40" + 10 @ 17.837"x26" -- Net: 62.7 ft2</div></div>
+          <div class="drawdown-value">72.1 <span class="unit">ft2 (+15%)</span></div>
+        </div>
+        <div class="drawdown-flags">
+          <label class="order"><input type="radio" name="dd1a" checked> ORDER -- Job Specific</label>
+          <label class="pull"><input type="radio" name="dd1a"> Pull from Inventory</label>
+        </div>
+        <div class="drawdown-row" style="margin-top:12px">
+          <div><div class="drawdown-label">3/16" Infinity Board (sheets)</div><div class="drawdown-detail">14 pcs -- 4 @ 27.44"x40" + 10 @ 17.837"x26" -- Net: 62.7 ft2 -- 9 sheets @ 48x96"</div></div>
+          <div class="drawdown-value">72.1 <span class="unit">ft2 (+15%)</span></div>
+        </div>
+        <div class="drawdown-flags">
+          <label class="order"><input type="radio" name="dd1b" checked> ORDER -- Job Specific</label>
+          <label class="pull"><input type="radio" name="dd1b"> Pull from Inventory</label>
+        </div>
+      </div>
+      <div class="pm-notes"><h5>PM Notes</h5><textarea placeholder="Add notes for this part...">All 14 cards same process. Two cut sizes on the board. Foil placement per proof markup. Veracruz x3 each, all others x1.</textarea></div>
+    </div>
+
+    <!-- ===== PART 2 ===== -->
+    <div class="part-container hidden" id="part-2">
+      <div class="part-hero">
+        <div class="part-number" style="color:var(--teal)">PART 2</div>
+        <div class="part-subtitle">3/16" Infinity Board Direct Print -- Cards No Foil</div>
+        <div class="part-meta">
+          <span class="part-tag tag-material">3/16" White Infinity Board</span>
+          <span class="part-tag tag-sides">4/4 -- Print Both Sides</span>
+          <span class="part-tag tag-finish">Trim to Shape + Rounded Corners</span>
+        </div>
+      </div>
+      <div class="size-breakdown">8 pcs @ 17.837" x 26" -- $80 each ($640.00 total)</div>
+      <table class="items-table">
+        <thead><tr><th style="width:70px">Thumb</th><th>Filename</th><th>Description</th><th>Size</th><th style="text-align:center">Qty</th><th>$/ea</th><th style="text-align:center">QC</th></tr></thead>
+        <tbody>
+          <tr><td><div class="thumb-cell"><div class="thumb-placeholder">No Foil</div></div></td><td class="filename-cell">F3BETBSP037<span class="file-ext">.pdf</span></td><td class="desc-cell">Winners Card -- No Foil (direct print)</td><td class="dims-cell">17.837" x 26"</td><td class="qty-cell">2</td><td class="finish-cell">$80</td><td><span class="status-badge status-pending">Pending</span></td></tr>
+          <tr><td><div class="thumb-cell"><div class="thumb-placeholder">No Foil</div></div></td><td class="filename-cell">F3BETBSP039<span class="file-ext">.pdf</span></td><td class="desc-cell">Winners Card -- No Foil</td><td class="dims-cell">17.837" x 26"</td><td class="qty-cell">2</td><td class="finish-cell">$80</td><td><span class="status-badge status-pending">Pending</span></td></tr>
+          <tr><td><div class="thumb-cell"><div class="thumb-placeholder">No Foil</div></div></td><td class="filename-cell">F4BETBSP048<span class="file-ext">.pdf</span></td><td class="desc-cell">Winners Card -- No Foil</td><td class="dims-cell">17.837" x 26"</td><td class="qty-cell">2</td><td class="finish-cell">$80</td><td><span class="status-badge status-pending">Pending</span></td></tr>
+          <tr><td><div class="thumb-cell"><div class="thumb-placeholder">No Foil</div></div></td><td class="filename-cell">F4BETBSP052<span class="file-ext">.pdf</span></td><td class="desc-cell">Winners Card -- No Foil</td><td class="dims-cell">17.837" x 26"</td><td class="qty-cell">2</td><td class="finish-cell">$80</td><td><span class="status-badge status-pending">Pending</span></td></tr>
+        </tbody>
+      </table>
+      <div class="part-summary">
+        <div class="total-items"><strong>4 items</strong> -- same files as Part 1, no foil, no vinyl</div>
+        <div class="total-qty">Part Total: <span style="color:var(--teal)">8 pcs</span> -- <span style="color:var(--green)">$640.00</span></div>
+      </div>
+      <div class="substrate-drawdown">
+        <h4>Substrate Drawdown -- Part 2</h4>
+        <div class="drawdown-row">
+          <div><div class="drawdown-label">3/16" Infinity Board (sheets)</div><div class="drawdown-detail">8 pcs @ 17.837"x26" -- Net: 25.7 ft2 -- 4 sheets @ 48x96"</div></div>
+          <div class="drawdown-value">29.6 <span class="unit">ft2 (+15%)</span></div>
+        </div>
+        <div class="drawdown-flags">
+          <label class="order"><input type="radio" name="dd2" checked> ORDER -- Job Specific</label>
+          <label class="pull"><input type="radio" name="dd2"> Pull from Inventory</label>
+        </div>
+      </div>
+      <div class="pm-notes"><h5>PM Notes</h5><textarea placeholder="Add notes for this part...">Same art as Part 1, NO FOIL, NO VINYL. Direct print both sides on board. Confirm corner radius matches Part 1.</textarea></div>
+    </div>
+
+    <!-- ===== PART 3: VINYL BANNER ===== -->
+    <div class="part-container hidden" id="part-3">
+      <div class="part-hero">
+        <div class="part-number" style="color:var(--rose)">PART 3</div>
+        <div class="part-subtitle">14oz Vinyl Banner -- Hem & Grommets</div>
+        <div class="part-meta">
+          <span class="part-tag tag-material">14oz Scrim Vinyl</span>
+          <span class="part-tag tag-sides">4/0 -- Print One Side</span>
+          <span class="part-tag tag-finish">Hem all sides + Grommets every 2'</span>
+        </div>
+      </div>
+      <div class="process-notes">
+        <h5>Finishing</h5>
+        <ul>
+          <li>Hem all 4 sides</li>
+          <li>Grommets every 2' on all sides</li>
+        </ul>
+      </div>
+      <div class="size-breakdown">15 pcs @ 36" x 84" (finished size)</div>
+      <table class="items-table">
+        <thead><tr><th style="width:70px">Thumb</th><th>Filename</th><th>Description</th><th>Finished Size</th><th style="text-align:center">Qty</th><th style="text-align:center">QC</th></tr></thead>
+        <tbody>
+          <tr><td><div class="thumb-cell"><div class="thumb-placeholder">Banner</div></div></td><td class="filename-cell">Konami_Banner_36x84<span class="file-ext">.pdf</span></td><td class="desc-cell">Vinyl Banner -- Hem & Grommets every 2'</td><td class="dims-cell">36" x 84"</td><td class="qty-cell">15</td><td><span class="status-badge status-pending">Pending</span></td></tr>
+        </tbody>
+      </table>
+      <div class="part-summary">
+        <div class="total-items"><strong>1 item</strong></div>
+        <div class="total-qty">Part Total: <span style="color:var(--rose)">15 pcs</span></div>
+      </div>
+      <div class="substrate-drawdown">
+        <h4>Substrate Drawdown -- Part 3 -- 14oz Vinyl (54" roll)</h4>
+        <div class="drawdown-row">
+          <div>
+            <div class="drawdown-label">14oz Scrim Vinyl -- 54" wide roll</div>
+            <div class="drawdown-detail">15 pcs @ 84" print length each (36" fits across 54" roll) -- Net: 1,260 linear inches</div>
+          </div>
+          <div class="drawdown-value">1,449 <span class="unit">in (+15%)</span></div>
+        </div>
+        <div class="drawdown-detail" style="color:#94a3b8;padding:4px 14px;font-size:12px">= 120.75 linear feet = 40.25 yards of 54" roll</div>
+        <div class="drawdown-flags">
+          <label class="order"><input type="radio" name="dd3" checked> ORDER -- Job Specific</label>
+          <label class="pull"><input type="radio" name="dd3"> Pull from Inventory</label>
+        </div>
+      </div>
+      <div class="pm-notes"><h5>PM Notes</h5><textarea placeholder="Add notes for this part...">36" width fits across 54" roll (18" waste strip). Grommets every 2' all sides. Confirm grommet placement with client if corners count as grommet positions.</textarea></div>
+    </div>
+
+    <!-- ===== PART 4: SEG GRAPHICS ===== -->
+    <div class="part-container hidden" id="part-4">
+      <div class="part-hero">
+        <div class="part-number" style="color:var(--amber)">PART 4</div>
+        <div class="part-subtitle">SEG Graphics -- Dye-Sub on TXJBB Fabric</div>
+        <div class="part-meta">
+          <span class="part-tag tag-material">TXJBB Fabric (Dye-Sub)</span>
+          <span class="part-tag tag-sides">4/0 -- Print One Side</span>
+          <span class="part-tag tag-finish">SEG Finishing (silicone edge)</span>
+        </div>
+      </div>
+      <div class="process-notes">
+        <h5>Production Process</h5>
+        <ol>
+          <li>Dye-sublimation print on TXJBB fabric</li>
+          <li>SEG finishing -- sew silicone edge gasket to perimeter</li>
+        </ol>
+      </div>
+      <div class="size-breakdown">2 pcs @ 21.4" x 95.2" &emsp;|&emsp; 1 pc @ 324" x 95.2" (27' x 7'11")</div>
+      <table class="items-table">
+        <thead><tr><th style="width:70px">Thumb</th><th>Filename</th><th>Description</th><th>Finished Size</th><th style="text-align:center">Qty</th><th style="text-align:center">QC</th></tr></thead>
+        <tbody>
+          <tr><td><div class="thumb-cell"><div class="thumb-placeholder">SEG<br>Lg</div></div></td><td class="filename-cell">Konami_SEG_324x95<span class="file-ext">.pdf</span></td><td class="desc-cell">SEG Graphic -- Large (27' wide)</td><td class="dims-cell">324" x 95.2"</td><td class="qty-cell">1</td><td><span class="status-badge status-pending">Pending</span></td></tr>
+          <tr><td><div class="thumb-cell"><div class="thumb-placeholder">SEG<br>Sm</div></div></td><td class="filename-cell">Konami_SEG_21x95<span class="file-ext">.pdf</span></td><td class="desc-cell">SEG Graphic -- Small side panels</td><td class="dims-cell">21.4" x 95.2"</td><td class="qty-cell">2</td><td><span class="status-badge status-pending">Pending</span></td></tr>
+        </tbody>
+      </table>
+      <div class="part-summary">
+        <div class="total-items"><strong>2 line items</strong> -- 1 large + 2 small panels</div>
+        <div class="total-qty">Part Total: <span style="color:var(--amber)">3 pcs</span></div>
+      </div>
+      <div class="substrate-drawdown">
+        <h4>Substrate Drawdown -- Part 4 -- TXJBB Fabric (126" roll)</h4>
+        <div class="drawdown-row">
+          <div>
+            <div class="drawdown-label">TXJBB Fabric -- 126" wide roll</div>
+            <div class="drawdown-detail">
+              1 pc @ 324" print length (95.2" fits across 126" roll)<br>
+              2 pcs @ 21.4" print length (95.2" fits across 126" roll) = 42.8"<br>
+              Net: 366.8 linear inches
+            </div>
+          </div>
+          <div class="drawdown-value">421.8 <span class="unit">in (+15%)</span></div>
+        </div>
+        <div class="drawdown-detail" style="color:#94a3b8;padding:4px 14px;font-size:12px">= 35.2 linear feet = 11.7 yards of 126" roll</div>
+        <div class="drawdown-flags">
+          <label class="order"><input type="radio" name="dd4" checked> ORDER -- Job Specific</label>
+          <label class="pull"><input type="radio" name="dd4"> Pull from Inventory</label>
+        </div>
+      </div>
+      <div class="pm-notes"><h5>PM Notes</h5><textarea placeholder="Add notes for this part...">95.2" height fits across 126" roll (30.8" waste). Large panel is 27' -- confirm printer can handle 324" continuous. SEG finishing outsourced or in-house? Confirm frame dimensions with client.</textarea></div>
+    </div>
+
+    <!-- ESTIMATE RECONCILIATION -->
+    <div class="estimate-recon">
+      <h3>Estimate Reconciliation -- E155374</h3>
+      <table class="recon-table">
+        <thead><tr><th>Part</th><th>Description</th><th style="text-align:center">Qty</th><th style="text-align:right">Estimate</th><th style="text-align:center">Match</th></tr></thead>
+        <tbody>
+          <tr><td style="font-weight:600">Part 1</td><td>Chrome Vinyl + Board + Foil</td><td style="text-align:center;font-weight:700">14</td><td style="text-align:right">$2,530.00</td><td style="text-align:center"><span class="status-badge status-complete">Match</span></td></tr>
+          <tr><td style="font-weight:600">Part 2</td><td>Infinity Board 4/4, No Foil</td><td style="text-align:center;font-weight:700">8</td><td style="text-align:right">$640.00</td><td style="text-align:center"><span class="status-badge status-complete">Match</span></td></tr>
+          <tr><td style="font-weight:600">Part 3</td><td>14oz Vinyl Banner</td><td style="text-align:center;font-weight:700">15</td><td style="text-align:right">TBD</td><td style="text-align:center"><span class="status-badge status-pending">Pending</span></td></tr>
+          <tr><td style="font-weight:600">Part 4</td><td>SEG Graphics -- TXJBB Fabric</td><td style="text-align:center;font-weight:700">3</td><td style="text-align:right">TBD</td><td style="text-align:center"><span class="status-badge status-pending">Pending</span></td></tr>
+        </tbody>
+        <tfoot><tr><td colspan="2">TOTAL</td><td style="text-align:center;font-size:18px">40</td><td style="text-align:right;font-size:18px;color:var(--green)">$3,170.00+</td><td></td></tr></tfoot>
+      </table>
+      <div style="margin-top:12px;font-size:12px;color:var(--muted)">Parts 3 & 4 pricing TBD -- not on original estimate. Package: Carton Pack | Shipping: Not Included</div>
+    </div>
+  </div>
+</div>
+
+<script>
+function showPart(n, btn) {
+  for(let i=1;i<=4;i++) document.getElementById('part-'+i).classList.toggle('hidden', i!==n);
+  document.querySelectorAll('.parts-nav button').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+async function generatePDF() {
+  const btn = document.getElementById('btnPdf');
+  btn.textContent = 'Generating...'; btn.disabled = true;
+  try {
+    const { PDFDocument, rgb, StandardFonts } = PDFLib;
+    const pdf = await PDFDocument.create();
+    const font = await pdf.embedFont(StandardFonts.Helvetica);
+    const fontBold = await pdf.embedFont(StandardFonts.HelveticaBold);
+    const fontMono = await pdf.embedFont(StandardFonts.Courier);
+    const W=612, H=792, M=40, CW=W-2*M;
+
+    function dt(pg,t,x,y,o={}) { pg.drawText(String(t),{x,y,size:o.size||10,font:o.bold?fontBold:(o.mono?fontMono:font),color:o.color||rgb(0.1,0.1,0.1)}); }
+    function dln(pg,x1,y1,x2,y2,c,t) { pg.drawLine({start:{x:x1,y:y1},end:{x:x2,y:y2},color:c||rgb(0.82,0.82,0.82),thickness:t||0.5}); }
+    function dr(pg,x,y,w,h,c) { pg.drawRectangle({x,y,width:w,height:h,color:c||rgb(0.95,0.96,0.98)}); }
+
+    function pageHdr(pg, pLabel, pn, tp) {
+      dr(pg,0,H-56,W,56,rgb(0.12,0.16,0.22));
+      dt(pg,'WIDE FORMAT JOB TICKET',M,H-24,{size:14,bold:true,color:rgb(1,1,1)});
+      dt(pg,'E155374 -- Konami YCS -- RR Donnelley',M,H-40,{size:8,color:rgb(0.7,0.75,0.8)});
+      const rt=pLabel+'  |  Page '+pn+' of '+tp;
+      dt(pg,rt,W-M-fontBold.widthOfTextAtSize(rt,14),H-22,{size:14,bold:true,color:rgb(1,1,1)});
+      const iy=H-76;
+      dt(pg,'PM: Scott Jehlik',M,iy,{size:9}); dt(pg,'Created: Oct 9, 2026',M+140,iy,{size:9});
+      dt(pg,'Valid Until: Nov 8, 2026',M+310,iy,{size:9,color:rgb(0.86,0.15,0.15)});
+      dln(pg,M,iy-8,W-M,iy-8,rgb(0.82,0.82,0.82),1);
+      return iy-20;
+    }
+
+    function drawSummary(pg,y) {
+      const bh=40;
+      dr(pg,M,y-bh,CW,bh,rgb(0.14,0.18,0.25));
+      pg.drawRectangle({x:M,y:y-bh,width:CW,height:bh,borderColor:rgb(0.3,0.35,0.42),borderWidth:1});
+      const sy=y-26;
+      dt(pg,'JOB SUMMARY:  4 Parts  |  17 Line Items  |  40 Total Pieces',M+10,sy,{size:10,bold:true,color:rgb(0.7,0.8,0.9)});
+      return y-bh-10;
+    }
+
+    // No finishing column -- just #, Filename, Description, Size, Qty
+    const ROW_H=28, ROWS_PP=18;
+    function drawTbl(pg,y,items,si) {
+      const cols=[M, M+24, M+210, M+370, M+468];
+      const hdrs=['#','Filename','Description','Size','Qty'];
+      dr(pg,M,y-16,CW,16,rgb(0.93,0.94,0.96));
+      hdrs.forEach((h,i)=>dt(pg,h,cols[i]+2,y-12,{size:7,bold:true,color:rgb(0.4,0.4,0.4)}));
+      y-=20;
+      let d=0;
+      for(let i=si;i<items.length&&d<ROWS_PP;i++,d++){
+        const it=items[i],ry=y-(d*ROW_H)-8;
+        if(ry<100) break;
+        if(d%2===1) dr(pg,M,ry-6,CW,ROW_H,rgb(0.98,0.98,0.99));
+        pg.drawRectangle({x:cols[0]+1,y:ry-4,width:20,height:20,color:rgb(0.92,0.94,0.97),borderColor:rgb(0.82,0.85,0.9),borderWidth:0.5});
+        dt(pg,String(i+1),cols[0]+6,ry+2,{size:7,color:rgb(0.5,0.5,0.5)});
+        dt(pg,it.file.substring(0,30),cols[1]+2,ry+4,{size:8,bold:true});
+        dt(pg,it.desc.substring(0,28),cols[2]+2,ry+4,{size:8,color:rgb(0.3,0.35,0.4)});
+        dt(pg,it.size,cols[3]+2,ry+4,{size:8,mono:true});
+        dt(pg,String(it.qty),cols[4]+8,ry+4,{size:11,bold:true});
+        dln(pg,M,ry-8,W-M,ry-8);
+      }
+      return si+d;
+    }
+
+    // Drawdown block at bottom of page
+    function drawDrawdown(pg, lines) {
+      // lines = [{label, detail, value}]
+      const startY = 48 + lines.length * 22 + 20;
+      dr(pg, M, 42, CW, startY - 42, rgb(0.12,0.16,0.22));
+      pg.drawRectangle({x:M,y:42,width:CW,height:startY-42,borderColor:rgb(0.25,0.3,0.38),borderWidth:1});
+      dt(pg,'SUBSTRATE DRAWDOWN',M+10,startY-14,{size:8,bold:true,color:rgb(0.58,0.63,0.72)});
+      let ly = startY - 30;
+      for(const ln of lines) {
+        dt(pg,ln.label,M+10,ly,{size:9,bold:true,color:rgb(1,1,1)});
+        dt(pg,ln.detail,M+10,ly-12,{size:7,color:rgb(0.75,0.8,0.85)});
+        const vw = fontBold.widthOfTextAtSize(ln.value,12);
+        dt(pg,ln.value,W-M-vw-10,ly-4,{size:12,bold:true,color:rgb(0.38,0.65,0.98)});
+        ly -= 22;
+      }
+    }
+
+    const p1=[
+      {file:'26YC-EN001_UR 70ADV Veracruz',desc:'TEAM YCS Veracruz -- ADV',size:'17.837"x26"',qty:3},
+      {file:'26YC-EN001_UR 71GEN Veracruz',desc:'TEAM YCS Veracruz -- GEN',size:'17.837"x26"',qty:3},
+      {file:'F3BETBSP037.pdf',desc:'Winners Card -- Foil',size:'27.44"x40"',qty:1},
+      {file:'F3BETBSP039.pdf',desc:'Winners Card -- Foil',size:'27.44"x40"',qty:1},
+      {file:'F4BETBSP048.pdf',desc:'Winners Card -- Foil',size:'27.44"x40"',qty:1},
+      {file:'F4BETBSP052.pdf',desc:'Winners Card -- Foil',size:'27.44"x40"',qty:1},
+      {file:'26YC-EN001_UR 60ADV S.Domingo',desc:'YCS Santo Domingo -- ADV',size:'17.837"x26"',qty:1},
+      {file:'26YC-EN001_UR 61GEN S.Domingo',desc:'YCS Santo Domingo -- GEN',size:'17.837"x26"',qty:1},
+      {file:'26YC-EN001_UR 62ADV Lima',desc:'YCS Lima -- ADV',size:'17.837"x26"',qty:1},
+      {file:'26YC-EN001_UR 63GEN Lima',desc:'YCS Lima -- GEN',size:'17.837"x26"',qty:1},
+    ];
+    const p2=[
+      {file:'F3BETBSP037.pdf',desc:'No Foil -- Direct Print 4/4',size:'17.837"x26"',qty:2},
+      {file:'F3BETBSP039.pdf',desc:'No Foil -- Direct Print 4/4',size:'17.837"x26"',qty:2},
+      {file:'F4BETBSP048.pdf',desc:'No Foil -- Direct Print 4/4',size:'17.837"x26"',qty:2},
+      {file:'F4BETBSP052.pdf',desc:'No Foil -- Direct Print 4/4',size:'17.837"x26"',qty:2},
+    ];
+    const p3=[
+      {file:'Konami_Banner_36x84.pdf',desc:'Vinyl Banner -- Hem & Grommets q2\'',size:'36"x84"',qty:15},
+    ];
+    const p4=[
+      {file:'Konami_SEG_324x95.pdf',desc:'SEG Graphic -- Large (27\' wide)',size:'324"x95.2"',qty:1},
+      {file:'Konami_SEG_21x95.pdf',desc:'SEG Graphic -- Small panels',size:'21.4"x95.2"',qty:2},
+    ];
+
+    function renderPart(items,pn,pLabel,matLine,sizeLine,pColor,isFirst,ddLines) {
+      let idx=0,pip=0;
+      const tp=Math.ceil(items.length/ROWS_PP)||1;
+      while(idx<items.length) {
+        pip++;
+        const pg=pdf.addPage([W,H]);
+        let y=pageHdr(pg,pLabel,pip,tp);
+        if(isFirst&&pip===1) y=drawSummary(pg,y);
+
+        dt(pg,'PART '+pn,M,y,{size:14,bold:true,color:pColor});
+        y-=14;
+        dt(pg,matLine,M,y,{size:9,color:rgb(0.4,0.4,0.4)});
+        y-=12;
+        dln(pg,M,y,W-M,y,pColor,3);
+        y-=14;
+        if(pip===1&&sizeLine) {
+          dr(pg,M,y-14,CW,14,rgb(0.91,0.94,0.99));
+          dt(pg,sizeLine,M+8,y-10,{size:8,bold:true,color:rgb(0.2,0.25,0.34)});
+          y-=22;
+        }
+        idx=drawTbl(pg,y,items,idx);
+
+        // Summary line
+        if(idx>=items.length) {
+          const tq=items.reduce((s,i)=>s+i.qty,0);
+          const sy=48+(ddLines?ddLines.length*22+20:0)+16;
+          dln(pg,M,sy+12,W-M,sy+12,pColor,1.5);
+          dt(pg,items.length+' items  |  Total Pieces: '+tq,M,sy,{size:11,bold:true});
+        }
+        // Drawdown at bottom
+        if(idx>=items.length&&ddLines) drawDrawdown(pg,ddLines);
+
+        dln(pg,M,36,W-M,36);
+        dt(pg,'E155374 -- Konami YCS -- '+pLabel+' -- Pg '+pip+'/'+tp,M,22,{size:8,color:rgb(0.5,0.5,0.5)});
+      }
+    }
+
+    renderPart(p1,1,'Part 1',
+      'Chrome Vinyl 5/0 + 3/16" Infinity Board 4/0 - Foil - Mount + Trim + Round Corners',
+      '4 pcs @ 27.44"x40" ($215 ea)  |  10 pcs @ 17.837"x26" ($167 ea)  |  $2,530',
+      rgb(0.15,0.39,0.92), true,
+      [{label:'Chrome Vinyl (54" roll)',detail:'14 pcs -- Net: 62.7 ft2',value:'72.1 ft2 (+15%)'},
+       {label:'3/16" Infinity Board (48x96" sheets)',detail:'14 pcs -- 9 sheets',value:'72.1 ft2 (+15%)'}]);
+
+    renderPart(p2,2,'Part 2',
+      '3/16" Infinity Board - 4/4 Direct Print - No Foil - Trim + Round Corners',
+      '8 pcs @ 17.837"x26" ($80 ea)  |  $640',
+      rgb(0.05,0.58,0.53), false,
+      [{label:'3/16" Infinity Board (48x96" sheets)',detail:'8 pcs -- 4 sheets',value:'29.6 ft2 (+15%)'}]);
+
+    renderPart(p3,3,'Part 3',
+      '14oz Scrim Vinyl - 4/0 - Hem all sides + Grommets every 2\'',
+      '15 pcs @ 36"x84" finished',
+      rgb(0.88,0.11,0.28), false,
+      [{label:'14oz Vinyl (54" roll)',detail:'15 pcs @ 84" each -- 36" fits across 54" roll',value:'1,449 in (+15%)'},
+       {label:'',detail:'= 120.75 linear ft = 40.25 yards of 54" roll',value:''}]);
+
+    renderPart(p4,4,'Part 4',
+      'TXJBB Fabric - Dye-Sub - SEG Finishing (silicone edge)',
+      '1 pc @ 324"x95.2"  |  2 pcs @ 21.4"x95.2"',
+      rgb(0.85,0.47,0.02), false,
+      [{label:'TXJBB Fabric (126" roll)',detail:'1x324" + 2x21.4" = 366.8" net -- 95.2" fits across 126" roll',value:'421.8 in (+15%)'},
+       {label:'',detail:'= 35.2 linear ft = 11.7 yards of 126" roll',value:''}]);
+
+    const bytes = await pdf.save();
+    const blob = new Blob([bytes],{type:'application/pdf'});
+    const url = URL.createObjectURL(blob);
+    const a=document.createElement('a'); a.href=url; a.download='E155374_Konami_YCS_JobTicket.pdf'; a.click();
+    URL.revokeObjectURL(url);
+  } catch(e) { console.error(e); alert('PDF failed: '+e.message); }
+  finally { btn.textContent='Download Job Ticket PDF'; btn.disabled=false; }
+}
+</script>
+</body>
+</html>

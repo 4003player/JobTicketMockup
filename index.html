@@ -1,0 +1,965 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wide Format Job Ticket Tool — Mockup</title>
+<script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+<style>
+  :root {
+    --bg: #f5f5f5; --card: #ffffff; --border: #d0d0d0; --text: #1a1a1a; --muted: #666;
+    --accent: #2563eb; --accent-light: #dbeafe;
+    --green: #16a34a; --green-light: #dcfce7;
+    --orange: #ea580c; --orange-light: #fff7ed;
+    --red: #dc2626; --red-light: #fef2f2;
+    --yellow: #ca8a04; --yellow-light: #fefce8;
+    --purple: #7c3aed; --purple-light: #ede9fe;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); line-height: 1.5; }
+
+  .app-header {
+    background: #1e293b; color: white; padding: 12px 24px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .app-header h1 { font-size: 18px; font-weight: 600; }
+  .app-header .subtitle { color: #94a3b8; font-size: 13px; }
+  .app-header .actions { display: flex; gap: 8px; }
+  .app-header .actions button {
+    background: var(--accent); color: white; border: none; border-radius: 6px;
+    padding: 8px 16px; font-size: 13px; font-weight: 500; cursor: pointer;
+  }
+  .app-header .actions button:hover { background: #1d4ed8; }
+  .app-header .actions button.secondary { background: transparent; border: 1px solid #475569; color: #cbd5e1; }
+  .app-header .actions button.secondary:hover { background: #334155; }
+
+  .main { max-width: 1200px; margin: 0 auto; padding: 20px; }
+
+  /* Job Header Card */
+  .job-header-card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+    padding: 24px; margin-bottom: 20px;
+  }
+  .job-header-grid {
+    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 16px;
+  }
+  .field-group label {
+    display: block; font-size: 11px; font-weight: 600; text-transform: uppercase;
+    color: var(--muted); letter-spacing: 0.5px; margin-bottom: 4px;
+  }
+  .field-group .value { font-size: 15px; font-weight: 500; }
+  .field-group .value.large { font-size: 20px; font-weight: 700; }
+  .estimate-box {
+    background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 16px;
+    font-size: 13px; color: #475569; margin-top: 8px;
+  }
+  .estimate-box .est-label { font-weight: 600; color: var(--text); margin-bottom: 4px; }
+
+  /* Job Summary Banner */
+  .job-summary-banner {
+    background: linear-gradient(135deg, #1e293b, #334155); color: white;
+    border-radius: 10px; padding: 20px 24px; margin-bottom: 20px;
+    display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;
+  }
+  .summary-stat { text-align: center; min-width: 100px; }
+  .summary-stat .stat-num { font-size: 32px; font-weight: 800; line-height: 1; }
+  .summary-stat .stat-num.blue { color: #60a5fa; }
+  .summary-stat .stat-num.green { color: #4ade80; }
+  .summary-stat .stat-num.purple { color: #a78bfa; }
+  .summary-stat .stat-num.orange { color: #fb923c; }
+  .summary-stat .stat-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: #94a3b8; margin-top: 4px; }
+  .summary-divider { width: 1px; height: 48px; background: #475569; }
+
+  /* Parts tabs */
+  .parts-nav { display: flex; gap: 4px; margin-bottom: 0; padding: 0 4px; flex-wrap: wrap; }
+  .parts-nav button {
+    padding: 10px 20px; border: 1px solid var(--border); border-bottom: none;
+    border-radius: 8px 8px 0 0; background: #e9ecef; color: var(--muted);
+    font-size: 14px; font-weight: 500; cursor: pointer; position: relative; bottom: -1px;
+  }
+  .parts-nav button.active { background: var(--card); color: var(--text); font-weight: 600; border-bottom: 1px solid var(--card); }
+  .parts-nav button .part-badge {
+    display: inline-block; font-size: 11px; padding: 1px 7px; border-radius: 10px;
+    margin-left: 6px; font-weight: 600;
+  }
+  .parts-nav button:nth-child(1) .part-badge { background: #dbeafe; color: #1d4ed8; }
+  .parts-nav button:nth-child(2) .part-badge { background: #ede9fe; color: #6d28d9; }
+  .parts-nav button:nth-child(3) .part-badge { background: #fff7ed; color: #c2410c; }
+  .parts-nav button.change-order-tab { border-top: 3px solid var(--orange); }
+  .parts-nav button.change-order-tab .part-badge { background: #fff7ed; color: #c2410c; }
+
+  /* Part container */
+  .part-container {
+    background: var(--card); border: 1px solid var(--border); border-radius: 0 10px 10px 10px;
+    padding: 24px; margin-bottom: 20px;
+  }
+  .part-container.hidden { display: none; }
+
+  /* BIG part header */
+  .part-hero {
+    margin-bottom: 20px; padding-bottom: 20px; border-bottom: 3px solid #e2e8f0;
+  }
+  .part-hero .part-number {
+    font-size: 36px; font-weight: 900; letter-spacing: -1px; line-height: 1;
+    color: var(--accent);
+  }
+  .part-hero .part-number.purple { color: var(--purple); }
+  .part-hero .part-number.change-order { color: var(--orange); }
+  .part-hero .part-subtitle {
+    font-size: 18px; font-weight: 600; color: var(--text); margin-top: 4px;
+  }
+  .part-hero .part-meta { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 10px; }
+  .part-tag { font-size: 12px; padding: 3px 10px; border-radius: 20px; font-weight: 500; }
+  .tag-material { background: #e0f2fe; color: #0369a1; }
+  .tag-sides { background: #fce7f3; color: #be185d; }
+  .tag-finish { background: #ecfccb; color: #4d7c0f; }
+  .tag-co { background: #fff7ed; color: #c2410c; border: 1px solid #fed7aa; }
+  .change-order-banner {
+    background: linear-gradient(90deg, #fff7ed, #ffedd5); border: 2px solid #fb923c;
+    border-radius: 8px; padding: 12px 16px; margin-bottom: 16px;
+    display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 600; color: #c2410c;
+  }
+  .change-order-banner .co-icon { font-size: 22px; }
+
+  /* Substrate card */
+  .substrate-card {
+    background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;
+    padding: 16px; margin-bottom: 20px;
+  }
+  .substrate-card h4 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); margin-bottom: 10px; }
+  .substrate-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+  .substrate-stat .stat-value { font-size: 22px; font-weight: 700; }
+  .substrate-stat .stat-label { font-size: 12px; color: var(--muted); }
+  .substrate-stat .stat-value.highlight { color: var(--accent); }
+  .material-flags {
+    display: flex; gap: 16px; margin-top: 12px; padding-top: 12px; border-top: 1px solid #e2e8f0;
+  }
+  .material-flag { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500; }
+  .material-flag input[type="radio"] { accent-color: var(--accent); }
+  .material-flag.order-flag { color: var(--orange); }
+  .material-flag.pull-flag { color: var(--green); }
+
+  /* Items table */
+  .items-table { width: 100%; border-collapse: collapse; }
+  .items-table thead th {
+    text-align: left; font-size: 11px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.5px; color: var(--muted); padding: 8px 10px; border-bottom: 2px solid #e2e8f0;
+  }
+  .items-table tbody tr { border-bottom: 1px solid #f0f0f0; }
+  .items-table tbody tr:hover { background: #fafbfc; }
+  .items-table td { padding: 10px; vertical-align: middle; font-size: 14px; }
+  .thumb-cell {
+    width: 64px; height: 64px; border-radius: 6px; overflow: hidden;
+    border: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: center;
+    background: #f1f5f9; flex-shrink: 0;
+  }
+  .thumb-placeholder {
+    width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
+    font-size: 10px; color: #94a3b8; text-align: center; padding: 4px;
+    background: linear-gradient(135deg, #e2e8f0, #f1f5f9);
+  }
+  .filename-cell { font-weight: 600; }
+  .filename-cell .file-ext { color: var(--muted); font-weight: 400; }
+  .desc-cell { color: #475569; font-size: 13px; }
+  .dims-cell { font-family: 'SF Mono', 'Consolas', monospace; font-size: 13px; white-space: nowrap; }
+  .qty-cell { font-weight: 700; font-size: 16px; text-align: center; }
+  .finish-cell { font-size: 13px; }
+  .finishing-cell { font-size: 12px; color: #475569; }
+  .status-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; padding: 3px 8px; border-radius: 12px; font-weight: 500; }
+  .status-pending { background: var(--yellow-light); color: var(--yellow); }
+  .status-complete { background: var(--green-light); color: var(--green); }
+  .status-printing { background: var(--accent-light); color: var(--accent); }
+  .status-flagged { background: var(--red-light); color: var(--red); }
+  .flag-icon { color: var(--orange); font-size: 14px; cursor: help; }
+
+  .pm-notes { margin-top: 16px; }
+  .pm-notes h5 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); margin-bottom: 6px; }
+  .pm-notes textarea {
+    width: 100%; min-height: 70px; padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 8px;
+    font-family: inherit; font-size: 13px; color: var(--text); background: #f8fafc; resize: vertical; line-height: 1.5;
+  }
+  .pm-notes textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+
+  .part-summary {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-top: 16px; padding-top: 16px; border-top: 2px solid #e2e8f0;
+  }
+  .total-items { font-size: 14px; color: var(--muted); }
+  .total-items strong { color: var(--text); }
+  .total-qty { font-size: 18px; font-weight: 700; }
+
+  /* Grid diff panel */
+  .diff-panel { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 24px; margin-bottom: 20px; }
+  .diff-panel h3 { font-size: 16px; margin-bottom: 12px; }
+  .diff-item { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 6px; margin-bottom: 4px; font-size: 13px; }
+  .diff-new { background: var(--green-light); }
+  .diff-changed { background: var(--yellow-light); }
+  .diff-removed { background: var(--red-light); text-decoration: line-through; color: var(--muted); }
+  .diff-badge { font-size: 10px; font-weight: 700; text-transform: uppercase; padding: 2px 6px; border-radius: 4px; min-width: 52px; text-align: center; }
+  .diff-badge.new { background: var(--green); color: white; }
+  .diff-badge.changed { background: var(--yellow); color: white; }
+  .diff-badge.removed { background: var(--red); color: white; }
+
+  /* Kitting */
+  .kitting-panel { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 24px; margin-bottom: 20px; }
+  .kitting-panel h3 { font-size: 16px; margin-bottom: 12px; }
+  .kit-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .kit-card { border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; }
+  .kit-card h4 { font-size: 14px; margin-bottom: 8px; color: var(--accent); }
+  .kit-card .kit-item { font-size: 13px; padding: 4px 0; display: flex; justify-content: space-between; border-bottom: 1px solid #f5f5f5; }
+  .kit-card .kit-item:last-child { border-bottom: none; }
+
+  .mockup-banner {
+    background: linear-gradient(90deg, #fbbf24, #f59e0b); color: #1a1a1a;
+    text-align: center; padding: 6px; font-size: 12px; font-weight: 600; letter-spacing: 0.5px;
+  }
+  @media (max-width: 768px) {
+    .job-header-grid { grid-template-columns: 1fr; }
+    .substrate-grid { grid-template-columns: repeat(2, 1fr); }
+    .kit-cards { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="mockup-banner">MOCKUP -- Layout & Feature Preview -- Not a Working Build</div>
+
+<div class="app-header">
+  <div>
+    <h1>Wide Format Job Ticket</h1>
+    <div class="subtitle">MNTN Meet Las Vegas -- Westamerica Communications</div>
+  </div>
+  <div class="actions">
+    <button class="secondary" onclick="switchView('ticket')">Job Ticket</button>
+    <button class="secondary" onclick="switchView('diff')">Grid Diff</button>
+    <button class="secondary" onclick="switchView('kitting')">Kitting</button>
+    <button id="btnPdf" onclick="generatePDF()">Download Job Ticket PDF</button>
+  </div>
+</div>
+
+<div class="main">
+  <!-- JOB HEADER -->
+  <div class="job-header-card">
+    <div class="job-header-grid">
+      <div class="field-group"><label>Job Number</label><div class="value large">E150883</div></div>
+      <div class="field-group"><label>Client</label><div class="value">Westamerica Communications</div></div>
+      <div class="field-group"><label>Job Name</label><div class="value">MNTN Meet Las Vegas</div></div>
+      <div class="field-group"><label>Project Manager</label><div class="value">Sarah M.</div></div>
+      <div class="field-group"><label>Date Created</label><div class="value">Oct 17, 2026</div></div>
+      <div class="field-group"><label>Ship Date</label><div class="value" style="color:var(--red);font-weight:700">Aug 7, 2026</div></div>
+    </div>
+    <div class="estimate-box">
+      <div class="est-label">Estimate Description</div>
+      Event signage for MNTN Meet Las Vegas conference. Includes foam core wayfinding signs, PVC exhibitor signs, foam core breakout room IDs, directional arrows, and welcome signage. Multi-location delivery: main venue + satellite registration area. Estimate total: $3,817.50
+    </div>
+  </div>
+
+  <!-- JOB SUMMARY BANNER -->
+  <div class="job-summary-banner">
+    <div class="summary-stat"><div class="stat-num blue">3</div><div class="stat-label">Parts</div></div>
+    <div class="summary-divider"></div>
+    <div class="summary-stat"><div class="stat-num green">30</div><div class="stat-label">Line Items</div></div>
+    <div class="summary-divider"></div>
+    <div class="summary-stat"><div class="stat-num purple">119</div><div class="stat-label">Total Pieces to Print</div></div>
+    <div class="summary-divider"></div>
+    <div class="summary-stat"><div class="stat-num orange">1</div><div class="stat-label">Change Order</div></div>
+    <div class="summary-divider"></div>
+    <div class="summary-stat"><div class="stat-num" style="color:#f87171">3</div><div class="stat-label">Flagged Items</div></div>
+  </div>
+
+  <!-- TICKET VIEW -->
+  <div id="view-ticket">
+    <div class="parts-nav">
+      <button class="active" onclick="showPart(1, this)">Part 1 <span class="part-badge">Foam Core - 4/0</span></button>
+      <button onclick="showPart(2, this)">Part 2 <span class="part-badge">PVC 3/16" - 4/4</span></button>
+      <button class="change-order-tab" onclick="showPart(3, this)">Part 3 <span class="part-badge">CHANGE ORDER</span></button>
+    </div>
+
+    <!-- ========== PART 1 ========== -->
+    <div class="part-container" id="part-1">
+      <div class="part-hero">
+        <div class="part-number">PART 1</div>
+        <div class="part-subtitle">Foam Core - Single Side (4/0)</div>
+        <div class="part-meta">
+          <span class="part-tag tag-material">3/16" White Foam Core</span>
+          <span class="part-tag tag-sides">4/0 -- Print One Side</span>
+          <span class="part-tag tag-finish">Matte Lam</span>
+        </div>
+      </div>
+      <div class="substrate-card">
+        <h4>Substrate Drawdown -- Foam Core 3/16"</h4>
+        <div style="font-size:13px;font-weight:600;color:#334155;margin-bottom:10px;padding:8px 12px;background:#e8f0fe;border-radius:6px">
+          34 pcs @ 24" x 24"&emsp;|&emsp;1 pc @ 18" x 15.41"
+        </div>
+        <div class="substrate-grid">
+          <div class="substrate-stat"><div class="stat-value">32</div><div class="stat-label">Total Pieces</div></div>
+          <div class="substrate-stat"><div class="stat-value">142.5 ft2</div><div class="stat-label">Net Print Area</div></div>
+          <div class="substrate-stat"><div class="stat-value highlight">163.9 ft2</div><div class="stat-label">Drawdown (+15% waste)</div></div>
+          <div class="substrate-stat"><div class="stat-value">34 sheets</div><div class="stat-label">@ 48x96" sheets</div></div>
+        </div>
+        <div class="material-flags">
+          <label class="material-flag order-flag"><input type="radio" name="mat1" checked> ORDER MATERIAL -- Job Specific</label>
+          <label class="material-flag pull-flag"><input type="radio" name="mat1"> Pull from Inventory</label>
+        </div>
+      </div>
+      <!-- Items sorted by qty descending -->
+      <table class="items-table">
+        <thead><tr>
+          <th style="width:70px">Thumb</th><th>Filename</th><th>Description</th><th>Size</th>
+          <th style="text-align:center">Qty</th><th>Finish</th><th>Finishing</th><th style="text-align:center">QC</th>
+        </tr></thead>
+        <tbody>
+          <tr>
+            <td><div class="thumb-cell"><div class="thumb-placeholder">WiFi<br>Info</div></div></td>
+            <td class="filename-cell">MNTN_Wifi_Info<span class="file-ext">.pdf</span></td>
+            <td class="desc-cell">WiFi: MNTNMEETLV / LASVEGAS2026</td>
+            <td class="dims-cell">24" x 24"</td>
+            <td class="qty-cell">6</td><td class="finish-cell">Matte</td><td class="finishing-cell">--</td>
+            <td><span class="status-badge status-pending">Pending</span></td>
+          </tr>
+          <tr>
+            <td><div class="thumb-cell"><div class="thumb-placeholder">MNTN<br>Welcome</div></div></td>
+            <td class="filename-cell">MNTN_Welcome<span class="file-ext">.pdf</span></td>
+            <td class="desc-cell">Welcome Sign -- Main Entrance</td>
+            <td class="dims-cell">24" x 24"</td>
+            <td class="qty-cell">4</td><td class="finish-cell">Matte</td><td class="finishing-cell">--</td>
+            <td><span class="status-badge status-complete">Done</span></td>
+          </tr>
+          <tr>
+            <td><div class="thumb-cell"><div class="thumb-placeholder">Arrow<br>Up Sq</div></div></td>
+            <td class="filename-cell">Arrow_Up_Square<span class="file-ext">.pdf</span></td>
+            <td class="desc-cell">Up Arrow -- Square</td>
+            <td class="dims-cell">24" x 24"</td>
+            <td class="qty-cell">2</td><td class="finish-cell">Matte</td><td class="finishing-cell">--</td>
+            <td><span class="status-badge status-pending">Pending</span></td>
+          </tr>
+          <tr>
+            <td><div class="thumb-cell"><div class="thumb-placeholder">Arrow<br>Up Rnd</div></div></td>
+            <td class="filename-cell">Arrow_Up_Round<span class="file-ext">.pdf</span></td>
+            <td class="desc-cell">Up Arrow -- Round</td>
+            <td class="dims-cell">24" x 24"</td>
+            <td class="qty-cell">2</td><td class="finish-cell">Matte</td><td class="finishing-cell">--</td>
+            <td><span class="status-badge status-pending">Pending</span></td>
+          </tr>
+          <tr>
+            <td><div class="thumb-cell"><div class="thumb-placeholder">Arrow<br>L Sq</div></div></td>
+            <td class="filename-cell">Arrow_Left_Square<span class="file-ext">.pdf</span></td>
+            <td class="desc-cell">Left Arrow -- Square</td>
+            <td class="dims-cell">24" x 24"</td>
+            <td class="qty-cell">2</td><td class="finish-cell">Matte</td><td class="finishing-cell">--</td>
+            <td><span class="status-badge status-pending">Pending</span></td>
+          </tr>
+          <tr>
+            <td><div class="thumb-cell"><div class="thumb-placeholder">Arrow<br>L Rnd</div></div></td>
+            <td class="filename-cell">Arrow_Left_Round<span class="file-ext">.pdf</span></td>
+            <td class="desc-cell">Left Arrow -- Round</td>
+            <td class="dims-cell">24" x 24"</td>
+            <td class="qty-cell">2</td><td class="finish-cell">Matte</td><td class="finishing-cell">--</td>
+            <td><span class="status-badge status-pending">Pending</span></td>
+          </tr>
+          <tr>
+            <td><div class="thumb-cell"><div class="thumb-placeholder">Arrow<br>R Sq</div></div></td>
+            <td class="filename-cell">Arrow_Right_Square<span class="file-ext">.pdf</span></td>
+            <td class="desc-cell">Right Arrow -- Square</td>
+            <td class="dims-cell">24" x 24"</td>
+            <td class="qty-cell">2</td><td class="finish-cell">Matte</td><td class="finishing-cell">--</td>
+            <td><span class="status-badge status-pending">Pending</span></td>
+          </tr>
+          <tr>
+            <td><div class="thumb-cell"><div class="thumb-placeholder">Arrow<br>R Rnd</div></div></td>
+            <td class="filename-cell">Arrow_Right_Round<span class="file-ext">.pdf</span></td>
+            <td class="desc-cell">Right Arrow -- Round</td>
+            <td class="dims-cell">24" x 24"</td>
+            <td class="qty-cell">2</td><td class="finish-cell">Matte</td><td class="finishing-cell">--</td>
+            <td><span class="status-badge status-pending">Pending</span></td>
+          </tr>
+          <tr>
+            <td><div class="thumb-cell"><div class="thumb-placeholder">MNTN<br>Cares</div></div></td>
+            <td class="filename-cell">MNTN_Cares<span class="file-ext">.pdf</span></td>
+            <td class="desc-cell">MNTN Cares</td>
+            <td class="dims-cell">24" x 24"</td>
+            <td class="qty-cell">2</td><td class="finish-cell">Matte</td><td class="finishing-cell">--</td>
+            <td><span class="status-badge status-pending">Pending</span></td>
+          </tr>
+          <tr>
+            <td><div class="thumb-cell"><div class="thumb-placeholder">Comp<br>Mtg</div></div></td>
+            <td class="filename-cell">MNTN_CompanyMtg<span class="file-ext">.pdf</span></td>
+            <td class="desc-cell">Company Meeting</td>
+            <td class="dims-cell">24" x 24"</td>
+            <td class="qty-cell">2</td><td class="finish-cell">Matte</td><td class="finishing-cell">--</td>
+            <td><span class="status-badge status-pending">Pending</span></td>
+          </tr>
+          <tr>
+            <td><div class="thumb-cell"><div class="thumb-placeholder">MNTN<br>Movers</div></div></td>
+            <td class="filename-cell">MNTN_Movers<span class="file-ext">.pdf</span></td>
+            <td class="desc-cell">MNTN Movers</td>
+            <td class="dims-cell">24" x 24"</td>
+            <td class="qty-cell">2</td><td class="finish-cell">Matte</td><td class="finishing-cell">--</td>
+            <td><span class="status-badge status-pending">Pending</span></td>
+          </tr>
+          <tr>
+            <td><div class="thumb-cell"><div class="thumb-placeholder">Check<br>In</div></div></td>
+            <td class="filename-cell">MNTN_CheckIn<span class="file-ext">.pdf</span></td>
+            <td class="desc-cell">MNTN Meet Check In</td>
+            <td class="dims-cell">24" x 24"</td>
+            <td class="qty-cell">2</td><td class="finish-cell">Matte</td><td class="finishing-cell">--</td>
+            <td><span class="status-badge status-printing">Print</span></td>
+          </tr>
+          <tr>
+            <td><div class="thumb-cell"><div class="thumb-placeholder">Wellness</div></div></td>
+            <td class="filename-cell">MNTN_Wellness<span class="file-ext">.pdf</span></td>
+            <td class="desc-cell">Wellness x Community</td>
+            <td class="dims-cell">24" x 24"</td>
+            <td class="qty-cell">2</td><td class="finish-cell">Matte</td><td class="finishing-cell">--</td>
+            <td><span class="status-badge status-pending">Pending</span></td>
+          </tr>
+          <tr>
+            <td><div class="thumb-cell"><div class="thumb-placeholder">M Logo</div></div></td>
+            <td class="filename-cell">MNTN_Logo_Podium<span class="file-ext">.ai</span></td>
+            <td class="desc-cell">M Logo -- Podium</td>
+            <td class="dims-cell">18" x 15.41"</td>
+            <td class="qty-cell">1</td><td class="finish-cell">Gloss</td><td class="finishing-cell">Die-cut to shape</td>
+            <td><span class="status-badge status-pending">Pending</span></td>
+          </tr>
+          <tr>
+            <td><div class="thumb-cell"><div class="thumb-placeholder">Revenue</div></div></td>
+            <td class="filename-cell">Breakout_Revenue<span class="file-ext">.pdf</span></td>
+            <td class="desc-cell">Breakout Room -- Revenue</td>
+            <td class="dims-cell">24" x 24"</td>
+            <td class="qty-cell">1</td><td class="finish-cell">Matte</td><td class="finishing-cell">--</td>
+            <td><span class="status-badge status-pending">Pending</span></td>
+          </tr>
+          <tr>
+            <td><div class="thumb-cell"><div class="thumb-placeholder">Finance</div></div></td>
+            <td class="filename-cell">Breakout_Finance<span class="file-ext">.pdf</span></td>
+            <td class="desc-cell">Breakout Room -- Finance</td>
+            <td class="dims-cell">24" x 24"</td>
+            <td class="qty-cell">1</td><td class="finish-cell">Matte</td><td class="finishing-cell">--</td>
+            <td><span class="status-badge status-pending">Pending</span></td>
+          </tr>
+          <tr>
+            <td><div class="thumb-cell"><div class="thumb-placeholder">Cafe</div></div></td>
+            <td class="filename-cell">MNTN_Cafe<span class="file-ext">.pdf</span></td>
+            <td class="desc-cell">MNTN Cafe</td>
+            <td class="dims-cell">24" x 24"</td>
+            <td class="qty-cell">1</td><td class="finish-cell">Matte</td><td class="finishing-cell">--</td>
+            <td><span class="status-badge status-pending">Pending</span></td>
+          </tr>
+          <tr>
+            <td><div class="thumb-cell"><div class="thumb-placeholder" style="color:var(--orange)">TBD</div></div></td>
+            <td class="filename-cell" style="color:var(--orange)">TBD_Breakout_3</td>
+            <td class="desc-cell"><span class="flag-icon" title="No signage name provided">!!</span> Breakout Room -- TBD</td>
+            <td class="dims-cell">24" x 24"</td>
+            <td class="qty-cell">1</td><td class="finish-cell">Matte</td><td class="finishing-cell">--</td>
+            <td><span class="status-badge status-flagged">Flagged</span></td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="part-summary">
+        <div class="total-items"><strong>18 items</strong> - Sorted by qty (most to least)</div>
+        <div class="total-qty">Total Pieces: <span style="color:var(--accent)">35</span></div>
+      </div>
+      <div class="pm-notes">
+        <h5>PM Notes</h5>
+        <textarea placeholder="Add notes for this part...">All foam core signs matte lam. Breakout rooms 5-8 still TBD from client -- follow up by 10/22. Podium piece is gloss lam + die-cut, confirm shape with designer.</textarea>
+      </div>
+    </div>
+
+    <!-- ========== PART 2 ========== -->
+    <div class="part-container hidden" id="part-2">
+      <div class="part-hero">
+        <div class="part-number purple">PART 2</div>
+        <div class="part-subtitle">PVC 3/16" - Double Side (4/4)</div>
+        <div class="part-meta">
+          <span class="part-tag tag-material">3/16" White PVC</span>
+          <span class="part-tag tag-sides">4/4 -- Print Both Sides</span>
+          <span class="part-tag tag-finish">Full Bleed</span>
+        </div>
+      </div>
+      <div class="substrate-card">
+        <h4>Substrate Drawdown -- PVC 3/16"</h4>
+        <div style="font-size:13px;font-weight:600;color:#334155;margin-bottom:10px;padding:8px 12px;background:#e8f0fe;border-radius:6px">
+          22 pcs @ 24" x 36"&emsp;|&emsp;6 pcs @ 24" x 36"&emsp;|&emsp;12 pcs @ 24" x 10"&emsp;|&emsp;10 pcs @ 12" x 10"&emsp;|&emsp;10 pcs @ 18" x 15"
+        </div>
+        <div class="substrate-grid">
+          <div class="substrate-stat"><div class="stat-value">84</div><div class="stat-label">Total Pieces</div></div>
+          <div class="substrate-stat"><div class="stat-value">156.0 ft2</div><div class="stat-label">Net Print Area</div></div>
+          <div class="substrate-stat"><div class="stat-value highlight">179.4 ft2</div><div class="stat-label">Drawdown (+15% waste)</div></div>
+          <div class="substrate-stat"><div class="stat-value">28 sheets</div><div class="stat-label">@ 48x96" sheets</div></div>
+        </div>
+        <div class="material-flags">
+          <label class="material-flag order-flag"><input type="radio" name="mat2" checked> ORDER MATERIAL -- Job Specific</label>
+          <label class="material-flag pull-flag"><input type="radio" name="mat2"> Pull from Inventory</label>
+        </div>
+      </div>
+      <!-- Sorted by qty descending -->
+      <table class="items-table">
+        <thead><tr>
+          <th style="width:70px">Thumb</th><th>Filename</th><th>Description</th><th>Size</th>
+          <th style="text-align:center">Qty</th><th>Finish</th><th>Finishing</th><th style="text-align:center">QC</th>
+        </tr></thead>
+        <tbody>
+          <tr>
+            <td><div class="thumb-cell"><div class="thumb-placeholder">Lunch<br>Menu</div></div></td>
+            <td class="filename-cell">AH2026_Lunch_Menu<span class="file-ext">.pdf</span>
+              <div class="desc-cell" style="margin-top:2px">Variants: beef x10, chicken x7, veg x4, seating x1</div>
+            </td>
+            <td class="desc-cell">Lunch Signs -- Menu & Seating L-Signs</td>
+            <td class="dims-cell">24" x 36"</td>
+            <td class="qty-cell">22</td><td class="finish-cell">Full Bleed</td><td class="finishing-cell">Grommets 4 corners</td>
+            <td><span class="status-badge status-pending">Pending</span></td>
+          </tr>
+          <tr>
+            <td><div class="thumb-cell"><div class="thumb-placeholder">Exhib<br>Top</div></div></td>
+            <td class="filename-cell">AH2026_Exhib_Tsign_Top<span class="file-ext">.pdf</span>
+              <div class="desc-cell" style="margin-top:2px">Multi-variant: civic, quality, resources, cultural, portos</div>
+            </td>
+            <td class="desc-cell">Exhibitor T-Sign -- Top Panel</td>
+            <td class="dims-cell">24" x 36"</td>
+            <td class="qty-cell">14</td><td class="finish-cell">Full Bleed</td><td class="finishing-cell">Grommets 4 corners</td>
+            <td><span class="status-badge status-pending">Pending</span></td>
+          </tr>
+          <tr>
+            <td><div class="thumb-cell"><div class="thumb-placeholder">Exhib<br>Bot</div></div></td>
+            <td class="filename-cell">AH2026_Exhib_Tsign_Bot<span class="file-ext">.pdf</span>
+              <div class="desc-cell" style="margin-top:2px">Multi-variant: women's health, payroll, quality/safety, ESC, benefits</div>
+            </td>
+            <td class="desc-cell">Exhibitor T-Sign -- Bottom Panel</td>
+            <td class="dims-cell">24" x 10"</td>
+            <td class="qty-cell">12</td><td class="finish-cell">Full Bleed</td><td class="finishing-cell">Grommets 4 corners</td>
+            <td><span class="status-badge status-pending">Pending</span></td>
+          </tr>
+          <tr>
+            <td><div class="thumb-cell"><div class="thumb-placeholder">Arrows<br>Sm</div></div></td>
+            <td class="filename-cell">AH2026_Arrow_Small<span class="file-ext">.pdf</span></td>
+            <td class="desc-cell">Velcro Arrow -- Small</td>
+            <td class="dims-cell">12" x 10"</td>
+            <td class="qty-cell">10</td><td class="finish-cell">Full Bleed</td><td class="finishing-cell">Velcro strips</td>
+            <td><span class="status-badge status-pending">Pending</span></td>
+          </tr>
+          <tr>
+            <td><div class="thumb-cell"><div class="thumb-placeholder">Arrows<br>Lg</div></div></td>
+            <td class="filename-cell">AH2026_Arrow_Large<span class="file-ext">.pdf</span></td>
+            <td class="desc-cell">Velcro Arrow -- Large</td>
+            <td class="dims-cell">18" x 15"</td>
+            <td class="qty-cell">10</td><td class="finish-cell">Full Bleed</td><td class="finishing-cell">Velcro strips</td>
+            <td><span class="status-badge status-pending">Pending</span></td>
+          </tr>
+          <tr>
+            <td><div class="thumb-cell"><div class="thumb-placeholder">Blank<br>Signs</div></div></td>
+            <td class="filename-cell">AH2026_Blank_Sign<span class="file-ext">.pdf</span></td>
+            <td class="desc-cell">Blank PVC Sign (for velcro arrows)</td>
+            <td class="dims-cell">24" x 36"</td>
+            <td class="qty-cell">6</td><td class="finish-cell">Full Bleed</td><td class="finishing-cell">Grommets + velcro</td>
+            <td><span class="status-badge status-pending">Pending</span></td>
+          </tr>
+          <tr>
+            <td><div class="thumb-cell"><div class="thumb-placeholder">Transl</div></div></td>
+            <td class="filename-cell">AH2026_Translations<span class="file-ext">.pdf</span></td>
+            <td class="desc-cell">Translation Services -- Spanish, Tagalog, Vietnamese</td>
+            <td class="dims-cell">24" x 36"</td>
+            <td class="qty-cell">4</td><td class="finish-cell">Full Bleed</td><td class="finishing-cell">Grommets 4 corners</td>
+            <td><span class="status-badge status-pending">Pending</span></td>
+          </tr>
+          <tr>
+            <td><div class="thumb-cell"><div class="thumb-placeholder">Refresh</div></div></td>
+            <td class="filename-cell">AH2026_Refreshments<span class="file-ext">.pdf</span></td>
+            <td class="desc-cell">Refreshments Available All Levels</td>
+            <td class="dims-cell">24" x 36"</td>
+            <td class="qty-cell">3</td><td class="finish-cell">Full Bleed</td><td class="finishing-cell">Grommets 4 corners</td>
+            <td><span class="status-badge status-complete">Done</span></td>
+          </tr>
+          <tr>
+            <td><div class="thumb-cell"><div class="thumb-placeholder">Dessert</div></div></td>
+            <td class="filename-cell">AH2026_Dessert_Lsign<span class="file-ext">.pdf</span></td>
+            <td class="desc-cell">Dessert L-Sign <span class="flag-icon" title="Qty PENDING confirmation">!! qty pending</span></td>
+            <td class="dims-cell">24" x 36"</td>
+            <td class="qty-cell" style="color:var(--orange)">2?</td><td class="finish-cell">Full Bleed</td><td class="finishing-cell">Grommets 4 corners</td>
+            <td><span class="status-badge status-flagged">Verify</span></td>
+          </tr>
+          <tr>
+            <td><div class="thumb-cell"><div class="thumb-placeholder">Refresh<br>L</div></div></td>
+            <td class="filename-cell">AH2026_Refreshments_Lsign<span class="file-ext">.pdf</span></td>
+            <td class="desc-cell">Refreshments L-Sign <span class="flag-icon" title="Reactivated, 5 in inventory">!! reactivated</span></td>
+            <td class="dims-cell">24" x 36"</td>
+            <td class="qty-cell">1</td><td class="finish-cell">Full Bleed</td><td class="finishing-cell">Grommets 4 corners</td>
+            <td><span class="status-badge status-flagged">Note</span></td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="part-summary">
+        <div class="total-items"><strong>10 line items</strong> - includes multi-variant & mixed-size entries</div>
+        <div class="total-qty">Total Pieces: <span style="color:var(--purple)">84</span></div>
+      </div>
+      <div class="pm-notes">
+        <h5>PM Notes</h5>
+        <textarea placeholder="Add notes for this part...">Dessert L-Sign qty still pending from client. Refreshments L-Sign reactivated -- 5 already in Code4 inventory, only printing 1 new. All signs get grommets 4 corners.</textarea>
+      </div>
+    </div>
+
+    <!-- ========== PART 3 - CHANGE ORDER ========== -->
+    <div class="part-container hidden" id="part-3">
+      <div class="change-order-banner">
+        <span class="co-icon">!!</span>
+        CHANGE ORDER -- Added Oct 20, 2026 -- Items below are outside the original estimate scope
+      </div>
+      <div class="part-hero">
+        <div class="part-number change-order">PART 3 -- CHANGE ORDER</div>
+        <div class="part-subtitle">Foam Core - Single Side (4/0) -- Added Post-Estimate</div>
+        <div class="part-meta">
+          <span class="part-tag tag-material">3/16" White Foam Core</span>
+          <span class="part-tag tag-sides">4/0 -- Print One Side</span>
+          <span class="part-tag tag-finish">Matte Lam</span>
+          <span class="part-tag tag-co">CHANGE ORDER #1 -- Oct 20, 2026</span>
+        </div>
+      </div>
+      <div class="substrate-card">
+        <h4>Substrate Drawdown -- Foam Core 3/16" (Change Order)</h4>
+        <div class="substrate-grid">
+          <div class="substrate-stat"><div class="stat-value">5</div><div class="stat-label">Total Pieces</div></div>
+          <div class="substrate-stat"><div class="stat-value">28.0 ft2</div><div class="stat-label">Net Print Area</div></div>
+          <div class="substrate-stat"><div class="stat-value highlight">32.2 ft2</div><div class="stat-label">Drawdown (+15% waste)</div></div>
+          <div class="substrate-stat"><div class="stat-value">5 sheets</div><div class="stat-label">@ 48x96" sheets</div></div>
+        </div>
+        <div class="material-flags">
+          <label class="material-flag order-flag"><input type="radio" name="mat3" checked> ORDER MATERIAL -- Job Specific</label>
+          <label class="material-flag pull-flag"><input type="radio" name="mat3"> Pull from Inventory</label>
+        </div>
+      </div>
+      <table class="items-table">
+        <thead><tr>
+          <th style="width:70px">Thumb</th><th>Filename</th><th>Description</th><th>Size</th>
+          <th style="text-align:center">Qty</th><th>Finish</th><th>Finishing</th><th style="text-align:center">QC</th>
+        </tr></thead>
+        <tbody>
+          <tr>
+            <td><div class="thumb-cell"><div class="thumb-placeholder">Closing<br>Party</div></div></td>
+            <td class="filename-cell">MNTN_ClosingParty<span class="file-ext">.pdf</span></td>
+            <td class="desc-cell">Closing Party Directional Sign</td>
+            <td class="dims-cell">24" x 24"</td>
+            <td class="qty-cell">3</td><td class="finish-cell">Matte</td><td class="finishing-cell">--</td>
+            <td><span class="status-badge status-pending">Pending</span></td>
+          </tr>
+          <tr>
+            <td><div class="thumb-cell"><div class="thumb-placeholder">VIP<br>Lounge</div></div></td>
+            <td class="filename-cell">MNTN_VIP_Lounge<span class="file-ext">.pdf</span></td>
+            <td class="desc-cell">VIP Lounge -- Added by client 10/20</td>
+            <td class="dims-cell">24" x 36"</td>
+            <td class="qty-cell">2</td><td class="finish-cell">Matte</td><td class="finishing-cell">--</td>
+            <td><span class="status-badge status-pending">Pending</span></td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="part-summary">
+        <div class="total-items"><strong>2 items</strong> - Change order added post-estimate</div>
+        <div class="total-qty">Total Pieces: <span style="color:var(--orange)">5</span></div>
+      </div>
+      <div class="pm-notes">
+        <h5>PM Notes</h5>
+        <textarea placeholder="Add notes for this part...">Client added closing party signs 10/20. VIP Lounge is 24x36, different size from the rest of the foam core in Part 1. Notify estimating for revised quote.</textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- DIFF VIEW -->
+  <div id="view-diff" style="display:none">
+    <div class="diff-panel">
+      <h3>Grid Comparison -- v2 vs v1 (uploaded Oct 15 to Oct 17)</h3>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:16px">Showing changes between client grid versions. Accept or reject each change into the job ticket.</p>
+      <div class="diff-item diff-changed"><span class="diff-badge changed">Changed</span><span><strong>Lunch Menu Signs</strong> -- Qty changed: <s>18</s> to <strong>22</strong></span></div>
+      <div class="diff-item diff-new"><span class="diff-badge new">New</span><span><strong>Nursing Mothers' Lounge</strong> -- 24"x36", PVC 3/16", 4/0, qty 1</span></div>
+      <div class="diff-item diff-changed"><span class="diff-badge changed">Changed</span><span><strong>Translation Signs</strong> -- Note updated: "remove bulletpoints and center languages"</span></div>
+      <div class="diff-item diff-changed"><span class="diff-badge changed">Changed</span><span><strong>Refreshments L-Sign</strong> -- Reactivated (was cancelled). Qty 1. 5 in inventory</span></div>
+      <div class="diff-item diff-changed"><span class="diff-badge changed">Changed</span><span><strong>Dessert L-Sign</strong> -- Reactivated. Qty "PENDING" -- <span style="color:var(--red);font-weight:600">needs confirmation</span></span></div>
+      <div class="diff-item diff-removed"><span class="diff-badge removed">Removed</span><span><strong>Photo Backdrop 8x10</strong> -- Removed from grid in v2</span></div>
+    </div>
+  </div>
+
+  <!-- KITTING VIEW -->
+  <div id="view-kitting" style="display:none">
+    <div class="kitting-panel">
+      <h3>Kitting Sheets -- Ship-To Locations</h3>
+      <div class="kit-cards">
+        <div class="kit-card">
+          <h4>Kit 1 -- Main Venue, Ballroom A</h4>
+          <div class="kit-item"><span>MNTN_Welcome.pdf</span><span>x4</span></div>
+          <div class="kit-item"><span>MNTN_CheckIn.pdf</span><span>x2</span></div>
+          <div class="kit-item"><span>Arrow_Up_Square.pdf</span><span>x2</span></div>
+          <div class="kit-item"><span>Arrow_Left_Square.pdf</span><span>x2</span></div>
+          <div class="kit-item"><span>MNTN_Wifi_Info.pdf</span><span>x4</span></div>
+          <div class="kit-item"><span>Breakout_Revenue.pdf</span><span>x1</span></div>
+          <div class="kit-item"><span>Breakout_Finance.pdf</span><span>x1</span></div>
+          <div class="kit-item" style="font-weight:700;border-top:2px solid #e2e8f0;margin-top:4px;padding-top:8px"><span>Kit Total</span><span>16 pcs</span></div>
+        </div>
+        <div class="kit-card">
+          <h4>Kit 2 -- Satellite Registration, Lobby</h4>
+          <div class="kit-item"><span>Arrow_Up_Round.pdf</span><span>x2</span></div>
+          <div class="kit-item"><span>Arrow_Left_Round.pdf</span><span>x2</span></div>
+          <div class="kit-item"><span>Arrow_Right_Square.pdf</span><span>x2</span></div>
+          <div class="kit-item"><span>Arrow_Right_Round.pdf</span><span>x2</span></div>
+          <div class="kit-item"><span>MNTN_Wifi_Info.pdf</span><span>x2</span></div>
+          <div class="kit-item"><span>MNTN_Logo_Podium.ai</span><span>x1</span></div>
+          <div class="kit-item" style="font-weight:700;border-top:2px solid #e2e8f0;margin-top:4px;padding-top:8px"><span>Kit Total</span><span>11 pcs</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function showPart(n, btn) {
+  document.getElementById('part-1').classList.toggle('hidden', n !== 1);
+  document.getElementById('part-2').classList.toggle('hidden', n !== 2);
+  document.getElementById('part-3').classList.toggle('hidden', n !== 3);
+  document.querySelectorAll('.parts-nav button').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+function switchView(view) {
+  document.getElementById('view-ticket').style.display = view === 'ticket' ? '' : 'none';
+  document.getElementById('view-diff').style.display = view === 'diff' ? '' : 'none';
+  document.getElementById('view-kitting').style.display = view === 'kitting' ? '' : 'none';
+}
+
+async function generatePDF() {
+  const btn = document.getElementById('btnPdf');
+  btn.textContent = 'Generating...';
+  btn.disabled = true;
+
+  try {
+    const { PDFDocument, rgb, StandardFonts } = PDFLib;
+    const pdf = await PDFDocument.create();
+    const font = await pdf.embedFont(StandardFonts.Helvetica);
+    const fontBold = await pdf.embedFont(StandardFonts.HelveticaBold);
+    const fontMono = await pdf.embedFont(StandardFonts.Courier);
+
+    const W = 612, H = 792, M = 40;
+    const CW = W - 2 * M;
+
+    function dt(page, text, x, y, opts = {}) {
+      const size = opts.size || 10;
+      const f = opts.bold ? fontBold : (opts.mono ? fontMono : font);
+      page.drawText(String(text), { x, y, size, font: f, color: opts.color || rgb(0.1,0.1,0.1) });
+    }
+    function dln(page, x1, y1, x2, y2, c, t) {
+      page.drawLine({ start:{x:x1,y:y1}, end:{x:x2,y:y2}, color:c||rgb(0.82,0.82,0.82), thickness:t||0.5 });
+    }
+    function dr(page, x, y, w, h, c) {
+      page.drawRectangle({ x, y, width:w, height:h, color:c||rgb(0.95,0.96,0.98) });
+    }
+
+    // Page header
+    function pageHeader(page, partLabel, pageNum, totalPages) {
+      dr(page, 0, H-56, W, 56, rgb(0.12,0.16,0.22));
+      dt(page, 'WIDE FORMAT JOB TICKET', M, H-24, {size:14, bold:true, color:rgb(1,1,1)});
+      dt(page, 'E150883 -- MNTN Meet Las Vegas -- Westamerica Communications', M, H-40, {size:9, color:rgb(0.7,0.75,0.8)});
+      const rightText = partLabel + '  |  Page ' + pageNum + ' of ' + totalPages;
+      const rtW = fontBold.widthOfTextAtSize(rightText, 14);
+      dt(page, rightText, W - M - rtW, H-22, {size:14, bold:true, color:rgb(1,1,1)});
+      const iy = H - 76;
+      dt(page, 'PM: Sarah M.', M, iy, {size:9});
+      dt(page, 'Created: Oct 17, 2026', M+140, iy, {size:9});
+      dt(page, 'Ship: Aug 7, 2026', M+310, iy, {size:9, color:rgb(0.86,0.15,0.15)});
+      dln(page, M, iy-8, W-M, iy-8, rgb(0.82,0.82,0.82), 1);
+      return iy - 20;
+    }
+
+    // Summary block (first page of entire ticket)
+    function drawSummary(page, y) {
+      const bh = 50;
+      dr(page, M, y - bh, CW, bh, rgb(0.14,0.18,0.25));
+      page.drawRectangle({x:M, y:y-bh, width:CW, height:bh, borderColor:rgb(0.3,0.35,0.42), borderWidth:1});
+      const cy = y - 18;
+      dt(page, 'JOB SUMMARY:', M+10, cy, {size:9, bold:true, color:rgb(0.7,0.75,0.8)});
+      const sy = cy - 18;
+      dt(page, '3 Parts', M+10, sy, {size:11, bold:true, color:rgb(0.38,0.65,0.98)});
+      dt(page, '|', M+68, sy, {size:11, color:rgb(0.4,0.45,0.5)});
+      dt(page, '30 Line Items', M+80, sy, {size:11, bold:true, color:rgb(0.29,0.85,0.5)});
+      dt(page, '|', M+170, sy, {size:11, color:rgb(0.4,0.45,0.5)});
+      dt(page, '119 Total Pieces to Print', M+182, sy, {size:11, bold:true, color:rgb(0.65,0.55,0.98)});
+      dt(page, '|', M+345, sy, {size:11, color:rgb(0.4,0.45,0.5)});
+      dt(page, '1 Change Order', M+357, sy, {size:11, bold:true, color:rgb(0.98,0.57,0.24)});
+      return y - bh - 12;
+    }
+
+    // Substrate card
+    function drawSubstrate(page, y, label, pcs, netSF, drawdownSF, sheets, sheetSize, ordered, sizeBreakdown) {
+      const ch = sizeBreakdown ? 88 : 72;
+      dr(page, M, y-ch, CW, ch, rgb(0.96,0.97,0.98));
+      page.drawRectangle({x:M, y:y-ch, width:CW, height:ch, borderColor:rgb(0.88,0.9,0.93), borderWidth:0.5});
+      dt(page, 'SUBSTRATE DRAWDOWN -- ' + label, M+10, y-14, {size:9, bold:true, color:rgb(0.4,0.4,0.4)});
+      let ny = y - 28;
+      if (sizeBreakdown) {
+        dr(page, M+8, ny-12, CW-16, 16, rgb(0.91,0.94,0.99));
+        dt(page, sizeBreakdown, M+14, ny-8, {size:8, bold:true, color:rgb(0.2,0.25,0.34)});
+        ny -= 18;
+      }
+      const sy = ny;
+      dt(page, pcs + ' pieces', M+10, sy, {size:10, bold:true});
+      dt(page, 'Net: ' + netSF + ' ft2', M+100, sy, {size:10});
+      dt(page, 'Drawdown (+15%): ' + drawdownSF + ' ft2', M+210, sy, {size:10, bold:true, color:rgb(0.15,0.39,0.92)});
+      dt(page, sheets + ' sheets @ ' + sheetSize, M+400, sy, {size:10});
+      const fy = sy - 18;
+      if (ordered) {
+        dt(page, '*** ORDER MATERIAL -- Job Specific (do not pull inventory)', M+10, fy, {size:9, bold:true, color:rgb(0.92,0.34,0.05)});
+      } else {
+        dt(page, '[OK] Pull from Inventory', M+10, fy, {size:9, bold:true, color:rgb(0.09,0.64,0.29)});
+      }
+      return y - ch - 12;
+    }
+
+    const ROW_H = 30;
+    const ROWS_PER_PAGE = 19;
+
+    function drawTable(page, y, items, startIdx) {
+      const cols = [M, M+24, M+185, M+340, M+410, M+455, M+530];
+      const hdrs = ['#', 'Filename', 'Description', 'Size', 'Qty', 'Finish', 'Finishing'];
+      dr(page, M, y-16, CW, 16, rgb(0.93,0.94,0.96));
+      hdrs.forEach((h,i) => dt(page, h, cols[i]+2, y-12, {size:7, bold:true, color:rgb(0.4,0.4,0.4)}));
+      y -= 20;
+      let drawn = 0;
+      for (let i = startIdx; i < items.length && drawn < ROWS_PER_PAGE; i++, drawn++) {
+        const item = items[i];
+        const ry = y - (drawn * ROW_H) - 8;
+        if (ry < 55) break;
+        if (drawn % 2 === 1) dr(page, M, ry-8, CW, ROW_H, rgb(0.98,0.98,0.99));
+        // thumb box
+        page.drawRectangle({x:cols[0]+1, y:ry-4, width:20, height:20, color:rgb(0.92,0.94,0.97), borderColor:rgb(0.82,0.85,0.9), borderWidth:0.5});
+        dt(page, String(i+1), cols[0]+6, ry+2, {size:7, color:rgb(0.5,0.5,0.5)});
+        dt(page, item.file, cols[1]+2, ry+4, {size:8, bold:true});
+        dt(page, item.desc.substring(0,30), cols[2]+2, ry+4, {size:8, color:rgb(0.3,0.35,0.4)});
+        if (item.flag) {
+          dt(page, '(!!) ' + item.flag, cols[2]+2, ry-6, {size:7, color:rgb(0.92,0.34,0.05)});
+        }
+        dt(page, item.size, cols[3]+2, ry+4, {size:8, mono:true});
+        dt(page, String(item.qty), cols[4]+8, ry+4, {size:10, bold:true});
+        dt(page, item.finish || '', cols[5]+2, ry+4, {size:8});
+        dt(page, (item.finishing || '--').substring(0,16), cols[6]+2, ry+4, {size:7});
+        dln(page, M, ry-10, W-M, ry-10);
+      }
+      return startIdx + drawn;
+    }
+
+    // DATA -- sorted by qty descending
+    const part1Items = [
+      { file:'MNTN_Wifi_Info.pdf', desc:'WiFi Info Sign', size:'24" x 24"', qty:6, finish:'Matte' },
+      { file:'MNTN_Welcome.pdf', desc:'Welcome Sign -- Main Entrance', size:'24" x 24"', qty:4, finish:'Matte' },
+      { file:'Arrow_Up_Square.pdf', desc:'Up Arrow -- Square', size:'24" x 24"', qty:2, finish:'Matte' },
+      { file:'Arrow_Up_Round.pdf', desc:'Up Arrow -- Round', size:'24" x 24"', qty:2, finish:'Matte' },
+      { file:'Arrow_Left_Square.pdf', desc:'Left Arrow -- Square', size:'24" x 24"', qty:2, finish:'Matte' },
+      { file:'Arrow_Left_Round.pdf', desc:'Left Arrow -- Round', size:'24" x 24"', qty:2, finish:'Matte' },
+      { file:'Arrow_Right_Square.pdf', desc:'Right Arrow -- Square', size:'24" x 24"', qty:2, finish:'Matte' },
+      { file:'Arrow_Right_Round.pdf', desc:'Right Arrow -- Round', size:'24" x 24"', qty:2, finish:'Matte' },
+      { file:'MNTN_Cares.pdf', desc:'MNTN Cares', size:'24" x 24"', qty:2, finish:'Matte' },
+      { file:'MNTN_CompanyMtg.pdf', desc:'Company Meeting', size:'24" x 24"', qty:2, finish:'Matte' },
+      { file:'MNTN_Movers.pdf', desc:'MNTN Movers', size:'24" x 24"', qty:2, finish:'Matte' },
+      { file:'MNTN_CheckIn.pdf', desc:'MNTN Meet Check In', size:'24" x 24"', qty:2, finish:'Matte' },
+      { file:'MNTN_Wellness.pdf', desc:'Wellness x Community', size:'24" x 24"', qty:2, finish:'Matte' },
+      { file:'MNTN_Souvenir.pdf', desc:'MNTN Souvenir Shop', size:'24" x 24"', qty:2, finish:'Matte' },
+      { file:'MNTN_Logo_Podium.ai', desc:'M Logo -- Podium', size:'18" x 15.41"', qty:1, finish:'Gloss', finishing:'Die-cut' },
+      { file:'Breakout_Revenue.pdf', desc:'Breakout -- Revenue', size:'24" x 24"', qty:1, finish:'Matte' },
+      { file:'Breakout_Finance.pdf', desc:'Breakout -- Finance', size:'24" x 24"', qty:1, finish:'Matte' },
+      { file:'MNTN_Cafe.pdf', desc:'MNTN Cafe', size:'24" x 24"', qty:1, finish:'Matte' },
+    ];
+
+    const part2Items = [
+      { file:'AH2026_Lunch_Menu.pdf', desc:'Lunch Signs -- Menu & Seating', size:'24" x 36"', qty:22, finish:'Full Bleed', finishing:'Grommets 4 corners' },
+      { file:'AH2026_Exhib_Top.pdf', desc:'Exhibitor T-Sign -- Top', size:'24" x 36"', qty:14, finish:'Full Bleed', finishing:'Grommets 4 corners' },
+      { file:'AH2026_Exhib_Bot.pdf', desc:'Exhibitor T-Sign -- Bottom', size:'24" x 10"', qty:12, finish:'Full Bleed', finishing:'Grommets 4 corners' },
+      { file:'AH2026_Arrow_Small.pdf', desc:'Velcro Arrow -- Small', size:'12" x 10"', qty:10, finish:'Full Bleed', finishing:'Velcro strips' },
+      { file:'AH2026_Arrow_Large.pdf', desc:'Velcro Arrow -- Large', size:'18" x 15"', qty:10, finish:'Full Bleed', finishing:'Velcro strips' },
+      { file:'AH2026_Blank_Sign.pdf', desc:'Blank PVC Sign', size:'24" x 36"', qty:6, finish:'Full Bleed', finishing:'Grommets + velcro' },
+      { file:'AH2026_Translations.pdf', desc:'Translation Services', size:'24" x 36"', qty:4, finish:'Full Bleed', finishing:'Grommets 4 corners' },
+      { file:'AH2026_Refreshments.pdf', desc:'Refreshments All Levels', size:'24" x 36"', qty:3, finish:'Full Bleed', finishing:'Grommets 4 corners' },
+      { file:'AH2026_Dessert_L.pdf', desc:'Dessert L-Sign', size:'24" x 36"', qty:2, finish:'Full Bleed', finishing:'Grommets 4 corners', flag:'qty pending' },
+      { file:'AH2026_Refresh_L.pdf', desc:'Refreshments L-Sign', size:'24" x 36"', qty:1, finish:'Full Bleed', finishing:'Grommets 4 corners', flag:'reactivated' },
+    ];
+
+    const part3Items = [
+      { file:'MNTN_ClosingParty.pdf', desc:'Closing Party Directional', size:'24" x 24"', qty:3, finish:'Matte' },
+      { file:'MNTN_VIP_Lounge.pdf', desc:'VIP Lounge -- Added 10/20', size:'24" x 36"', qty:2, finish:'Matte' },
+    ];
+
+    function renderPart(items, partNum, partLabel, materialLine, substArgs, isChangeOrder, isFirstPart) {
+      let idx = 0;
+      let pageInPart = 0;
+      const totalPages = Math.ceil(items.length / ROWS_PER_PAGE) || 1;
+      while (idx < items.length) {
+        pageInPart++;
+        const page = pdf.addPage([W, H]);
+        let y = pageHeader(page, partLabel, pageInPart, totalPages);
+
+        // Summary block on first page of entire ticket
+        if (isFirstPart && pageInPart === 1) {
+          y = drawSummary(page, y);
+        }
+
+        // BIG PART HEADER
+        const partColor = isChangeOrder ? rgb(0.92,0.34,0.05) : (partNum === 2 ? rgb(0.49,0.23,0.93) : rgb(0.15,0.39,0.92));
+        if (isChangeOrder) {
+          // Change order banner
+          dr(page, M, y-22, CW, 22, rgb(1,0.97,0.93));
+          page.drawRectangle({x:M, y:y-22, width:CW, height:22, borderColor:rgb(0.98,0.57,0.24), borderWidth:1.5});
+          dt(page, '(!!) CHANGE ORDER -- Items below are outside the original estimate scope', M+10, y-16, {size:9, bold:true, color:rgb(0.76,0.25,0.05)});
+          y -= 30;
+        }
+        dt(page, 'PART ' + partNum + (isChangeOrder ? ' -- CHANGE ORDER' : ''), M, y, {size:14, bold:true, color:partColor});
+        y -= 14;
+        dt(page, materialLine, M, y, {size:10, color:rgb(0.4,0.4,0.4)});
+        y -= 14;
+        dln(page, M, y, W-M, y, partColor, 3);
+        y -= 12;
+
+        // Substrate on first page of part
+        if (pageInPart === 1 && substArgs) {
+          y = drawSubstrate(page, y, ...substArgs);
+        }
+
+        idx = drawTable(page, y, items, idx);
+
+        // Part summary on last page
+        if (idx >= items.length) {
+          const totalQty = items.reduce((s,i) => s + i.qty, 0);
+          const fy = 55;
+          dln(page, M, fy+12, W-M, fy+12, rgb(0.15,0.39,0.92), 1.5);
+          dt(page, items.length + ' items  |  Total Pieces: ' + totalQty, M, fy, {size:11, bold:true});
+        }
+
+        // Footer
+        dln(page, M, 36, W-M, 36);
+        dt(page, 'E150883 -- MNTN Meet Las Vegas -- ' + partLabel + ' -- Pg ' + pageInPart + '/' + totalPages, M, 22, {size:8, color:rgb(0.5,0.5,0.5)});
+        dt(page, 'Generated by Job Ticket Tool', W-M-130, 22, {size:8, color:rgb(0.5,0.5,0.5)});
+      }
+    }
+
+    renderPart(part1Items, 1, 'Part 1',
+      '3/16" White Foam Core  -  4/0 Print One Side  -  Matte Laminate',
+      ['FOAM CORE 3/16"', '35', '142.5', '163.9', '34', '48x96"', true, '34 pcs @ 24" x 24"  |  1 pc @ 18" x 15.41"'],
+      false, true);
+
+    renderPart(part2Items, 2, 'Part 2',
+      '3/16" White PVC  -  4/4 Print Both Sides  -  Full Bleed  -  Grommets',
+      ['PVC 3/16"', '84', '156.0', '179.4', '28', '48x96"', true, '22 pcs @ 24"x36"  |  6 pcs @ 24"x36"  |  12 pcs @ 24"x10"  |  10 pcs @ 12"x10"  |  10 pcs @ 18"x15"'],
+      false, false);
+
+    renderPart(part3Items, 3, 'Part 3 -- Change Order',
+      '3/16" White Foam Core  -  4/0 Print One Side  -  Matte Laminate  -  CHANGE ORDER #1 Oct 20',
+      ['FOAM CORE 3/16" (Change Order)', '5', '28.0', '32.2', '5', '48x96"', true, '3 pcs @ 24" x 24"  |  2 pcs @ 24" x 36"'],
+      true, false);
+
+    const bytes = await pdf.save();
+    const blob = new Blob([bytes], { type: 'application/pdf' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'E150883_MNTN_JobTicket.pdf'; a.click();
+    URL.revokeObjectURL(url);
+  } catch (e) {
+    console.error(e);
+    alert('PDF generation failed: ' + e.message);
+  } finally {
+    btn.textContent = 'Download Job Ticket PDF';
+    btn.disabled = false;
+  }
+}
+</script>
+</body>
+</html>
